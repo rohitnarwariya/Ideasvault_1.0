@@ -83,7 +83,6 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
             </div>
             <div className="flex flex-col">
               <span className="font-bold tracking-tight text-xl text-white">IdeaVault</span>
-              <p className="text-[8px] font-mono tracking-[0.2em] text-brand-muted uppercase">CREATOR BLUEPRINTS</p>
             </div>
           </div>
 
@@ -113,7 +112,7 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
       </header>
 
       {/* Hero Section */}
-      <section className="min-h-[calc(100vh-80px)] flex flex-col justify-between pt-16 pb-12 px-6 text-center relative z-10 overflow-hidden max-w-7xl mx-auto">
+      <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center items-center pt-16 pb-40 px-6 text-center relative z-10 overflow-hidden max-w-7xl mx-auto">
         {/* Radial subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-r from-[#8B5CF6]/4 to-[#4F8CFF]/4 blur-[160px] rounded-full pointer-events-none z-0" />
 
@@ -175,7 +174,7 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-[28px] sm:text-[48px] md:text-[64px] lg:text-[80px] xl:text-[92px] font-black leading-tight tracking-[-0.04em] uppercase max-w-7xl mx-auto mb-8 font-display select-none text-center"
+            className="text-[28px] sm:text-[48px] md:text-[64px] lg:text-[80px] xl:text-[92px] font-normal leading-tight tracking-[-0.04em] uppercase max-w-7xl mx-auto mb-8 font-display select-none text-center"
           >
             <span className="inline-block text-white mr-2 sm:mr-4">NEVER FORGET</span>
             <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] via-[#6366F1] to-[#4F8CFF] py-2">
@@ -243,45 +242,16 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
 
         </div>
 
-        {/* Bottom Label & Platform Logos */}
+        {/* Bottom Label */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="w-full border-t border-[#23242B]/40 pt-10 z-10"
+          className="w-full border-t border-[#23242B]/40 pt-10 z-10 absolute bottom-6 left-0 right-0 px-6"
         >
-          <p className="text-[10px] font-mono tracking-[0.25em] text-[#4F8CFF] font-bold uppercase flex items-center justify-center gap-1.5 mb-6">
+          <p className="text-[10px] font-mono tracking-[0.25em] text-[#4F8CFF] font-bold uppercase flex items-center justify-center gap-1.5 mb-2">
             <span className="text-[#8B5CF6] text-xs">◆</span> CAPTURE FROM ANYWHERE
           </p>
-          
-          <div className="relative w-full max-w-4xl mx-auto overflow-hidden py-3 select-none">
-            {/* Fade overlays on both sides */}
-            <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-r from-[#09090B] via-[#09090B]/60 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-l from-[#09090B] via-[#09090B]/60 to-transparent z-10 pointer-events-none" />
-
-            {/* Marquee Track with Framer Motion */}
-            <motion.div
-              animate={{
-                x: ["0%", "-50%"]
-              }}
-              transition={{
-                ease: "linear",
-                duration: 25,
-                repeat: Infinity,
-              }}
-              className="flex gap-x-16 items-center whitespace-nowrap w-max opacity-40 grayscale hover:opacity-75 transition-opacity duration-300"
-            >
-              {/* Doubled logos for seamless looping */}
-              {[
-                "YouTube", "Instagram", "Pinterest", "X", "LinkedIn", "Articles", "Podcasts", "More",
-                "YouTube", "Instagram", "Pinterest", "X", "LinkedIn", "Articles", "Podcasts", "More"
-              ].map((logo, idx) => (
-                <span key={idx} className="font-bold text-xs tracking-widest uppercase text-white hover:text-[#4F8CFF] transition-colors cursor-default">
-                  {logo}
-                </span>
-              ))}
-            </motion.div>
-          </div>
         </motion.div>
       </section>
 

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, Star, Folder, ExternalLink, Sparkles, Filter, Plus, Trash2, 
-  ChevronRight, ArrowUpRight, Grid, HelpCircle, Key, Lock 
+  ChevronRight, ArrowUpRight, Grid, HelpCircle, Key, Lock, Play, X, Lightbulb, Bookmark 
 } from "lucide-react";
 import { Inspiration } from "../types";
 
@@ -35,6 +35,8 @@ export default function Dashboard({
 }: DashboardProps) {
   const [isAddingBoard, setIsAddingBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
+  const [activeWatchVideoId, setActiveWatchVideoId] = useState<string | null>(null);
+  const [activeWatchVideoTitle, setActiveWatchVideoTitle] = useState<string>("");
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,24 +47,92 @@ export default function Dashboard({
     }
   };
 
-  // Calculate counts dynamically for boards
-  const getBoardCount = (boardName: string) => {
-    if (boardName === "★ All") {
-      return inspirations.length;
+  // Helper to detect if an inspiration is a video
+  const isItemVideo = (item: Inspiration) => {
+    return (
+      item.platform === "YOUTUBE" || 
+      item.platform === "INSTAGRAM" || 
+      item.platform === "PODCAST" ||
+      item.board.toLowerCase().includes("youtube") ||
+      item.board.toLowerCase().includes("instagram") ||
+      item.board.toLowerCase().includes("video") ||
+      item.url.toLowerCase().includes("youtube.com") ||
+      item.url.toLowerCase().includes("youtu.be") ||
+      item.url.toLowerCase().includes("instagram.com")
+    );
+  };
+
+  // Helper to extract YouTube ID
+  const getYoutubeId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // Construct our unified collections/navigation tabs:
+  // - Virtual tab "★ All" (id: "all")
+  // - Virtual tab "📹 All Videos" (id: "all-videos")
+  // - Followed by other boards, filtering out duplicates
+  const navigationTabs = [
+    { id: "all", name: "★ All" },
+    { id: "all-videos", name: "📹 All Videos" },
+    ...boards.filter(b => b.id !== "all" && b.id !== "all-videos" && b.name !== "★ All" && b.name !== "📹 All Videos")
+  ];
+
+  // Unbiased, robust matching helper function for board/collection filtering
+  const matchesBoardFilter = (item: Inspiration, boardId: string, boardName: string) => {
+    if (boardId === "all") {
+      return true;
     }
-    return inspirations.filter(item => item.board.toLowerCase() === boardName.toLowerCase()).length;
+    if (boardId === "all-videos") {
+      return isItemVideo(item);
+    }
+
+    const nameLower = boardName.toLowerCase();
+    const idLower = boardId.toLowerCase();
+
+    // Check direct collection ID / UUID match
+    const hasDirectIdMatch = 
+      (item.collectionId && item.collectionId === boardId) || 
+      (item.collection_id && item.collection_id === boardId);
+
+    // Check name match (case insensitive)
+    const hasNameMatch = 
+      nameLower && 
+      (item.board.toLowerCase() === nameLower || 
+       item.board.toLowerCase().includes(nameLower) || 
+       nameLower.includes(item.board.toLowerCase()));
+
+    const isInstagramBoard = idLower === "instagram" || nameLower.includes("instagram");
+    const isYoutubeBoard = idLower === "youtube" || nameLower.includes("youtube");
+    const isPinterestBoard = idLower === "pinterest" || nameLower.includes("pinterest");
+    const isRandomBoard = idLower === "random-ideas" || nameLower.includes("random");
+
+    if (isInstagramBoard) {
+      return (item.platform?.toLowerCase() === "instagram") || hasDirectIdMatch || hasNameMatch;
+    } else if (isYoutubeBoard) {
+      return (item.platform?.toLowerCase() === "youtube") || hasDirectIdMatch || hasNameMatch;
+    } else if (isPinterestBoard) {
+      return (item.platform?.toLowerCase() === "pinterest") || hasDirectIdMatch || hasNameMatch;
+    } else if (isRandomBoard) {
+      return item.board.toLowerCase().includes("random") || hasDirectIdMatch || hasNameMatch;
+    }
+
+    return hasDirectIdMatch || hasNameMatch;
+  };
+
+  // Calculate counts dynamically for boards
+  const getBoardCount = (boardId: string, boardName: string) => {
+    return inspirations.filter(item => matchesBoardFilter(item, boardId, boardName)).length;
   };
 
   // Filtered list based on active board and search query
   const filteredInspirations = inspirations.filter(item => {
-    // Board matching
-    const matchesBoard = 
-      activeBoard === "all" || 
-      item.board.toLowerCase().includes(activeBoard.toLowerCase()) || 
-      (activeBoard === "random-ideas" && item.board.toLowerCase().includes("random")) ||
-      (activeBoard === "youtube" && item.board.toLowerCase().includes("youtube")) ||
-      (activeBoard === "instagram" && item.board.toLowerCase().includes("instagram")) ||
-      (activeBoard === "pinterest" && item.board.toLowerCase().includes("pinterest"));
+    const activeBoardObj = boards.find(b => b.id === activeBoard);
+    const activeBoardName = activeBoardObj ? activeBoardObj.name : "";
+    
+    const matchesBoard = matchesBoardFilter(item, activeBoard, activeBoardName);
 
     // Search query matching
     const matchesSearch = 
@@ -73,13 +143,49 @@ export default function Dashboard({
       item.platform.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesBoard && matchesSearch;
-  });  return (
+  });
+
+  // Assign and log exactly as requested
+  const ideas = inspirations;
+  const selectedCollection = activeBoard;
+  const filteredIdeas = filteredInspirations;
+
+  console.log("All ideas:", ideas);
+  console.log("Selected collection:", selectedCollection);
+  console.log("Filtered ideas:", filteredIdeas);
+
+  // Determine clean collection name for dynamic empty states
+  const activeBoardObj = boards.find(b => b.id === activeBoard);
+  const isAll = activeBoard === "all";
+  const isAllVideos = activeBoard === "all-videos";
+  const cleanBoardName = activeBoardObj 
+    ? activeBoardObj.name.replace(/^[★📹💡📌📸🌐\s]+/, "").trim() 
+    : "";
+
+  const hasSearch = searchQuery.trim() !== "";
+  
+  const emptyHeading = hasSearch 
+    ? "No matching ideas found" 
+    : isAll 
+      ? "No ideas yet" 
+      : isAllVideos 
+        ? "No videos saved yet" 
+        : `No ideas in ${cleanBoardName} yet`;
+
+  const emptyDescription = hasSearch 
+    ? `We couldn't find any ideas matching "${searchQuery}".` 
+    : isAll 
+      ? "Save your first idea to start building your personal inspiration library." 
+      : isAllVideos 
+        ? "Save your first video inspiration to start building your library." 
+        : `Save your first ${cleanBoardName} inspiration.`;
+
+  return (
     <div className="max-w-7xl mx-auto px-6 py-12 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30">
       
       {/* Title block with trigger to capture modal */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#23242B] mb-8">
         <div>
-          <span className="text-[10px] font-mono tracking-[0.2em] text-[#4F8CFF] font-bold uppercase">secured creative repository</span>
           <h1 className="font-display font-normal text-4xl md:text-6xl uppercase tracking-wide text-white mt-1 leading-none">
             Inspiration <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6]">Vault</span>
           </h1>
@@ -101,8 +207,8 @@ export default function Dashboard({
         
         {/* Navigation Collections Tabs */}
         <div className="lg:col-span-8 flex flex-wrap items-center gap-2">
-          {boards.map(b => {
-            const count = getBoardCount(b.name);
+          {navigationTabs.map(b => {
+            const count = getBoardCount(b.id, b.name);
             const isActive = activeBoard === b.id;
             return (
               <button
@@ -184,9 +290,6 @@ export default function Dashboard({
 
       {/* Main locked results header */}
       <div className="flex items-center justify-between border-b border-[#23242B] pb-4 mb-6">
-        <h2 className="text-[10px] font-mono tracking-[0.2em] text-brand-muted uppercase flex items-center gap-1.5 font-bold">
-          <Lock className="w-3.5 h-3.5 text-[#4F8CFF]" /> {activeBoard.toUpperCase() === "ALL" ? "ALL" : activeBoard.replace("-", " ").toUpperCase()} LOCKED INSPIRATIONS
-        </h2>
         <span className="text-[10px] font-mono text-brand-muted">
           Showing {filteredInspirations.length} of {inspirations.length} items
         </span>
@@ -194,19 +297,26 @@ export default function Dashboard({
 
       {/* Grid List */}
       {filteredInspirations.length === 0 ? (
-        <div className="bg-[#111217] border border-[#23242B] rounded-2xl p-16 text-center shadow-xl">
-          <HelpCircle className="w-12 h-12 text-[#23242B] mx-auto mb-4" />
-          <h3 className="font-display font-black uppercase text-lg text-white mb-1">No secured blueprints found</h3>
-          <p className="text-xs text-brand-muted max-w-sm mx-auto leading-relaxed">
-            Try adjusting your search query or selecting a different board. If this board is empty, secure your first creative inspiration.
+        <motion.div 
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="bg-[#111217] border border-[#23242B] rounded-2xl py-12 px-8 flex flex-col items-center justify-center text-center shadow-xl w-full max-w-xl mx-auto my-8"
+        >
+          <Folder className="w-8 h-8 text-brand-muted/70 mb-4 stroke-[1.25]" />
+          <h3 className="font-sans font-medium text-lg text-white mb-2">
+            {emptyHeading}
+          </h3>
+          <p className="text-xs text-brand-muted max-w-sm leading-relaxed mb-6">
+            {emptyDescription}
           </p>
           <button
             onClick={onAddInspiration}
-            className="mt-6 bg-[#09090B] hover:bg-[#111217] text-[#4F8CFF] border border-[#23242B] hover:border-[#4F8CFF]/40 font-mono text-xs px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+            className="bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6] text-white font-sans font-bold rounded-xl px-5 py-2.5 text-xs shadow-md hover:scale-[1.02] hover:shadow-[0_0_15px_rgba(79,140,255,0.25)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            + Secure First Inspiration
+            + Save First Idea
           </button>
-        </div>
+        </motion.div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredInspirations.map(insp => (
@@ -217,105 +327,99 @@ export default function Dashboard({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
-              className="bg-[#111217] rounded-3xl border border-[#23242B] hover:border-[#4F8CFF]/40 hover:shadow-[0_0_25px_rgba(79,140,255,0.06)] transition-all duration-300 flex flex-col justify-between group overflow-hidden relative"
+              className="bg-[#111217] rounded-3xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer"
+              onClick={() => onViewInspiration(insp)}
             >
-              
-              {/* Image Thumbnail header preview if has image */}
+              {/* Optional Thumbnail: Only show an image if the user actually uploaded one */}
               {insp.imageUrl && (
-                <div className="h-40 overflow-hidden border-b border-[#23242B]/60 relative">
-                  <img referrerPolicy="no-referrer" src={insp.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="thumbnail" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#111217] to-transparent opacity-60" />
+                <div className="h-44 overflow-hidden border-b border-[#23242B]/30 relative">
+                  <img 
+                    referrerPolicy="no-referrer" 
+                    src={insp.imageUrl} 
+                    className="w-full h-full object-cover" 
+                    alt="Inspiration reference" 
+                  />
                 </div>
               )}
 
-              {/* Main card metadata and title */}
-              <div className="p-6 flex-1">
-                <div className="flex items-center justify-between mb-4.5">
-                  {/* Platform Indicator */}
-                  <span className={`px-3 py-1 rounded-full text-[8px] font-mono border uppercase tracking-widest font-semibold ${
-                    insp.platform === "YOUTUBE" ? "bg-red-950/40 text-red-400 border-red-900/30" :
-                    insp.platform === "INSTAGRAM" ? "bg-purple-950/40 text-purple-400 border-purple-900/30" :
-                    insp.platform === "PINTEREST" ? "bg-rose-950/40 text-rose-400 border-rose-900/30" :
-                    insp.platform === "WEBSITE" ? "bg-teal-950/40 text-teal-400 border-teal-900/30" :
-                    "bg-zinc-950/40 text-zinc-400 border-zinc-900/30"
-                  }`}>
-                    {insp.platform === "PINTEREST" ? "📌 Pinterest" :
-                     insp.platform === "INSTAGRAM" ? "📸 Instagram" :
-                     insp.platform === "YOUTUBE" ? "📹 youtube" :
-                     `🌐 ${insp.platform}`}
-                  </span>
-
-                  {/* AI Pipeline Status */}
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${
-                      insp.aiStatus === "ready" 
-                        ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/30" 
-                        : "bg-red-950/40 text-red-400 border-red-900/30"
+              {/* Main Card Content */}
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    {/* Platform Badge */}
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-mono border uppercase tracking-wider font-semibold ${
+                      insp.platform === "YOUTUBE" ? "bg-red-950/20 text-red-400 border-red-900/30" :
+                      insp.platform === "INSTAGRAM" ? "bg-purple-950/20 text-purple-400 border-purple-900/30" :
+                      insp.platform === "PINTEREST" ? "bg-rose-950/20 text-rose-400 border-rose-900/30" :
+                      insp.platform === "WEBSITE" ? "bg-teal-950/20 text-teal-400 border-teal-900/30" :
+                      "bg-zinc-950/20 text-zinc-400 border-zinc-900/30"
                     }`}>
-                      {insp.aiStatus === "ready" ? "AI Ready" : "AI Failed"}
+                      {insp.platform === "PINTEREST" ? "📌 Pinterest" :
+                       insp.platform === "INSTAGRAM" ? "📸 Instagram" :
+                       insp.platform === "YOUTUBE" ? "📹 YouTube" :
+                       `🌐 ${insp.platform}`}
                     </span>
 
-                    {/* Star Favorite icon toggle */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleFavorite(insp.id);
-                      }}
-                      className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                        insp.isFavorite 
-                          ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-500" 
-                          : "bg-[#09090B] border-[#23242B] text-brand-muted hover:text-white"
-                      }`}
-                    >
-                      <Star className={`w-3.5 h-3.5 ${insp.isFavorite ? "fill-yellow-500" : ""}`} />
-                    </button>
+                    {/* Small saved date */}
+                    <span className="text-[10px] font-mono text-brand-muted/70">{insp.createdAt}</span>
                   </div>
+
+                  {/* Title */}
+                  <h3 className="font-sans font-bold text-xl text-white group-hover:text-[#4F8CFF] transition-colors leading-tight line-clamp-2">
+                    {insp.title}
+                  </h3>
+
+                  {/* Description: Why I saved this */}
+                  {(insp.notes || insp.voiceTranscript) && (
+                    <p className="mt-4 text-xs text-brand-muted/90 line-clamp-3 leading-relaxed font-sans">
+                      {insp.notes || insp.voiceTranscript}
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  {insp.tags && insp.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-4">
+                      {insp.tags.map(t => (
+                        <span key={t} className="text-[9px] font-mono bg-[#09090B]/60 px-2.5 py-0.5 rounded text-brand-muted border border-[#23242B]/30">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                {/* Title */}
-                <h3 
-                  onClick={() => onViewInspiration(insp)}
-                  className="font-display font-normal text-xl tracking-wide uppercase text-white group-hover:text-[#4F8CFF] cursor-pointer transition-colors leading-tight line-clamp-2"
-                >
-                  {insp.title}
-                </h3>
-
-                {/* Notes Snippet */}
-                <div 
-                  onClick={() => onViewInspiration(insp)}
-                  className="mt-4 p-4 bg-[#09090B] border border-[#23242B] rounded-2xl cursor-pointer hover:bg-[#09090B]/90 hover:border-[#4F8CFF]/20 transition-all duration-300"
-                >
-                  <p className="text-[11px] text-brand-muted italic line-clamp-3 leading-relaxed font-sans font-medium">
-                    {insp.notes || "No added details."}
-                  </p>
-                </div>
-
-                {/* Tags inside card */}
-                {insp.tags && insp.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-4">
-                    {insp.tags.map(t => (
-                      <span key={t} className="text-[9px] font-mono bg-[#09090B] px-2.5 py-0.5 rounded-full text-brand-muted border border-[#23242B]/40">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Footer */}
-              <div className="px-6 py-4 bg-[#09090B]/40 border-t border-[#23242B]/40 flex items-center justify-between text-[9px] font-mono text-brand-muted">
-                <span className="flex items-center gap-1 font-bold uppercase tracking-tight">
-                  <Folder className="w-3 h-3 text-[#4F8CFF]" /> {insp.board.replace(/[^\w\s]/g, "").trim()}
+              {/* Bottom Footer Section */}
+              <div className="px-6 py-4 bg-[#09090B]/20 border-t border-[#23242B]/30 flex items-center justify-between text-[10px] font-mono text-brand-muted">
+                {/* Collection / Board */}
+                <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4F8CFF]">
+                  <Folder className="w-3.5 h-3.5" /> {insp.board.replace(/[^\w\s]/g, "").trim()}
                 </span>
-                
-                <div className="flex items-center gap-3">
-                  <span>{insp.createdAt}</span>
+
+                <div className="flex items-center gap-4">
+                  {/* Favorite Toggle at Bottom */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(insp.id);
+                    }}
+                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                      insp.isFavorite 
+                        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" 
+                        : "bg-[#09090B] border-[#23242B]/80 text-brand-muted hover:text-white"
+                    }`}
+                  >
+                    <Star className={`w-3.5 h-3.5 ${insp.isFavorite ? "fill-yellow-500" : ""}`} />
+                  </button>
+
+                  {/* Visit Source Icon */}
                   {insp.url && (
                     <a 
                       href={insp.url} 
                       target="_blank" 
                       referrerPolicy="no-referrer"
-                      className="text-brand-muted hover:text-[#4F8CFF] transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 rounded-lg border border-[#23242B]/80 bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/30 transition-colors"
                       title="Visit reference link"
                     >
                       <ArrowUpRight className="w-3.5 h-3.5" />
@@ -328,6 +432,58 @@ export default function Dashboard({
           ))}
         </div>
       )}
+
+      {/* Watch Video Modal */}
+      <AnimatePresence>
+        {activeWatchVideoId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090B]/90 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#111217] border border-[#23242B] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl relative"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-[#23242B] flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] font-mono tracking-[0.2em] text-[#4F8CFF] font-bold uppercase">LIVE WATCH MODE</span>
+                  <h3 className="font-display font-normal text-xl text-white uppercase tracking-wide truncate max-w-md sm:max-w-xl">
+                    {activeWatchVideoTitle}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => {
+                    setActiveWatchVideoId(null);
+                    setActiveWatchVideoTitle("");
+                  }}
+                  className="text-brand-muted hover:text-white p-2 rounded-xl border border-[#23242B] hover:border-brand-muted/40 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Player Body */}
+              <div className="p-6 bg-[#09090B]">
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-[#23242B] shadow-inner">
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={`https://www.youtube.com/embed/${activeWatchVideoId}?autoplay=1`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-[#111217] border-t border-[#23242B] text-center text-[10px] font-mono text-brand-muted">
+                DEEP CREATIVE RETENTION FLOW BLUEPRINT ANALYSIS CORRELATED
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

@@ -23,6 +23,11 @@ export interface Inspiration {
   voiceUrl?: string;
   aiStatus: AiStatus;
   aiAnalysis: AiAnalysis | null;
+  collectionId?: string | null;
+  collection_id?: string | null;
+  observations?: string;
+  actionItems?: { text: string; checked: boolean }[];
+  voiceTranscript?: string;
 }
 
 export interface Board {
