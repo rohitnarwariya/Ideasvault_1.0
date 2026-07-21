@@ -1,0 +1,6 @@
+{
+  "name": "IdeaVault",
+  "description": "An AI-powered inspiration blueprint vault that saves the context of why you saved it.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
