@@ -1,4 +1,23 @@
-import { getGeminiClient } from "./_utils";
+import { GoogleGenAI } from "@google/genai";
+
+let aiClient: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI | null {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey && apiKey !== "MY_GEMINI_API_KEY" && apiKey.trim() !== "") {
+      aiClient = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+    }
+  }
+  return aiClient;
+}
 
 export default async function handler(req: any, res: any) {
   // Only allow POST request
