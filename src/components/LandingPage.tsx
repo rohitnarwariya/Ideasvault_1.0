@@ -175,10 +175,10 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-[42px] sm:text-[68px] md:text-[90px] lg:text-[115px] font-black leading-[0.9] sm:leading-[0.85] tracking-[-0.04em] uppercase max-w-5xl mx-auto mb-8 font-display select-none"
+            className="text-[28px] sm:text-[48px] md:text-[64px] lg:text-[80px] xl:text-[92px] font-black leading-tight tracking-[-0.04em] uppercase max-w-7xl mx-auto mb-8 font-display select-none text-center"
           >
-            <span className="block text-white">NEVER FORGET</span>
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] via-[#6366F1] to-[#4F8CFF] py-2">
+            <span className="inline-block text-white mr-2 sm:mr-4">NEVER FORGET</span>
+            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] via-[#6366F1] to-[#4F8CFF] py-2">
               WHY YOU SAVED IT
             </span>
           </motion.h1>
