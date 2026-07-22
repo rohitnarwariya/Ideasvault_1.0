@@ -5,7 +5,7 @@ import {
   INITIAL_INSPIRATIONS 
 } from "./data";
 import { Inspiration, Board } from "./types";
-import { supabase } from "./lib/supabase";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
 import AnalysisPage from "./components/AnalysisPage";
@@ -411,6 +411,25 @@ export default function App() {
     
     window.addEventListener("popstate", handlePopState);
 
+    if (!isSupabaseConfigured) {
+      setInspirations(INITIAL_INSPIRATIONS);
+      const path = window.location.pathname;
+      if (path === "/dashboard" || path === "/analysis" || path === "/profile") {
+        setUser({
+          id: "demo-user",
+          name: "Creator",
+          email: "demo@ideavault.app",
+          avatar: ""
+        });
+        setView("dashboard");
+      } else {
+        setView("landing");
+      }
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && session.user) {
         const u = {
@@ -434,6 +453,10 @@ export default function App() {
         setInspirations(INITIAL_INSPIRATIONS);
         setView("landing");
       }
+    }).catch(err => {
+      console.warn("Supabase session check error:", err);
+      setInspirations(INITIAL_INSPIRATIONS);
+      setView("landing");
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -474,6 +497,20 @@ export default function App() {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError(null);
+
+    if (!isSupabaseConfigured) {
+      setUser({
+        id: "demo-user",
+        name: signupUsername || authEmail.split("@")[0] || "Creator",
+        email: authEmail || "demo@ideavault.app",
+        avatar: ""
+      });
+      setShowAuthModal(false);
+      setView("dashboard");
+      setAuthLoading(false);
+      return;
+    }
+
     try {
       if (authMode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
@@ -635,6 +672,8 @@ export default function App() {
     };
     setBoards(prev => [...prev, newBoard]);
 
+    if (!isSupabaseConfigured) return;
+
     const { error } = await supabase
       .from('collections')
       .insert({
@@ -663,6 +702,8 @@ export default function App() {
     if (selectedInspiration && selectedInspiration.id === id) {
       setSelectedInspiration(prev => prev ? { ...prev, isFavorite: !prev.isFavorite } : null);
     }
+
+    if (!isSupabaseConfigured) return;
 
     const { data: existing, error: fetchErr } = await supabase
       .from('ideas')
@@ -697,6 +738,8 @@ export default function App() {
       setSelectedInspiration(prev => prev ? { ...prev, title: newTitle } : null);
     }
 
+    if (!isSupabaseConfigured) return;
+
     const { error } = await supabase
       .from('ideas')
       .update({ title: newTitle })
@@ -713,6 +756,8 @@ export default function App() {
     if (selectedInspiration && selectedInspiration.id === id) {
       setSelectedInspiration(prev => prev ? { ...prev, ...updates } : null);
     }
+
+    if (!isSupabaseConfigured) return;
 
     const { data: existing, error: fetchErr } = await supabase
       .from('ideas')
@@ -922,9 +967,11 @@ export default function App() {
     // Insert pending draft in local state instantly for extreme UI responsiveness
     setInspirations(prev => [draftItem, ...prev]);
 
-    const { error: dbInsertErr } = await supabase.from('ideas').insert(dbPayload);
-    if (dbInsertErr) {
-      console.error("Supabase insert error:", dbInsertErr);
+    if (isSupabaseConfigured) {
+      const { error: dbInsertErr } = await supabase.from('ideas').insert(dbPayload);
+      if (dbInsertErr) {
+        console.error("Supabase insert error:", dbInsertErr);
+      }
     }
 
     try {
@@ -975,17 +1022,19 @@ export default function App() {
         return item;
       }));
 
-      // Update in Supabase
-      await supabase
-        .from('ideas')
-        .update({
-          title: data.title || dbPayload.title,
-          platform: data.platform || dbPayload.platform,
-          ai_status: "ready",
-          ai_summary: JSON.stringify(updatedAiSummary),
-          ai_tags: data.tags || ["Aesthetics", "SaaS Layout"]
-        })
-        .eq('id', ideaId);
+      // Update in Supabase if configured
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('ideas')
+          .update({
+            title: data.title || dbPayload.title,
+            platform: data.platform || dbPayload.platform,
+            ai_status: "ready",
+            ai_summary: JSON.stringify(updatedAiSummary),
+            ai_tags: data.tags || ["Aesthetics", "SaaS Layout"]
+          })
+          .eq('id', ideaId);
+      }
 
     } catch (err) {
       console.error("Pipeline failure, applying local offline analysis:", err);
@@ -1009,16 +1058,18 @@ export default function App() {
         return item;
       }));
 
-      // Update status to failed in Supabase
-      await supabase
-        .from('ideas')
-        .update({
-          title: initialTitle,
-          ai_status: "ready",
-          ai_summary: JSON.stringify(failedAiSummary),
-          ai_tags: ["Custom Design"]
-        })
-        .eq('id', ideaId);
+      // Update status to failed in Supabase if configured
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('ideas')
+          .update({
+            title: initialTitle,
+            ai_status: "ready",
+            ai_summary: JSON.stringify(failedAiSummary),
+            ai_tags: ["Custom Design"]
+          })
+          .eq('id', ideaId);
+      }
     }
   };
 

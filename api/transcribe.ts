@@ -45,7 +45,35 @@ export default async function handler(req: any, res: any) {
       }
     };
 
-    const prompt = "Please transcribe this audio. Output ONLY the exact transcribed spoken words. Do NOT add any notes, commentary, tags, formatting, or metadata. If the audio is completely silent or has no speech, output absolutely nothing.";
+    const prompt = `You are a high-quality speech transcription and cleanup engine for a creative notes app.
+
+TASK:
+1. Transcribe the spoken audio accurately.
+2. Clean up the transcript according to these strict rules:
+   - Keep the user's original meaning and writing style intact.
+   - Automatically remove filler words (e.g., "um", "uh", "hmm", "you know", "like", "actually", "so yeah", "okay so").
+   - Remove repeated words caused by hesitation or false starts (e.g., "this is... this is" -> "this is").
+   - Preserve technical terms, proper nouns, creative jargon, and brand names.
+   - Preserve sentence order and all meaningful thoughts. DO NOT summarize, compress, expand, or invent information.
+   - Clean up grammar, add proper punctuation, and capitalize sentences correctly.
+   - Ignore silence longer than 2 seconds and background noise.
+   - If audio confidence is low or speech is faint, output the literal spoken words rather than hallucinating words.
+   - If audio is silent or contains no speech, return empty transcript and empty title.
+
+3. Title Generation:
+   - Create a concise, descriptive title (3-6 words) based ONLY on what the user said.
+   - Must be in Title Case.
+   - NEVER use generic titles like "Untitled", "Voice Memo", "Audio Recording", "New Note", or "Idea".
+   - Examples:
+     Speech: "I love the split screen transition." -> Title: "Split Screen Transition"
+     Speech: "This color palette feels very cinematic." -> Title: "Cinematic Color Palette"
+     Speech: "I want to recreate this hook." -> Title: "Hook Recreation Idea"
+
+Return a JSON object with this exact structure:
+{
+  "transcript": "Cleaned transcript text here",
+  "title": "3-6 Word Descriptive Title"
+}`;
 
     // Retry and fallback model logic
     const models = ["gemini-3.6-flash", "gemini-3.5-flash"];
@@ -58,7 +86,10 @@ export default async function handler(req: any, res: any) {
           console.log(`Transcribe attempt ${attempt}/3 with model ${model}`);
           response = await client.models.generateContent({
             model: model,
-            contents: [audioPart, prompt]
+            contents: [audioPart, prompt],
+            config: {
+              responseMimeType: "application/json",
+            }
           });
           if (response) break;
         } catch (err: any) {
@@ -84,8 +115,22 @@ export default async function handler(req: any, res: any) {
       throw lastError || new Error("All transcription attempts failed");
     }
 
-    const transcript = response.text || "";
-    res.status(200).json({ transcript: transcript.trim() });
+    let transcript = "";
+    let generatedTitle = "";
+
+    try {
+      const rawText = response.text?.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim() || "{}";
+      const parsed = JSON.parse(rawText);
+      transcript = parsed.transcript || "";
+      generatedTitle = parsed.title || "";
+    } catch (e) {
+      transcript = response.text || "";
+    }
+
+    res.status(200).json({ 
+      transcript: transcript.trim(),
+      title: generatedTitle.trim()
+    });
   } catch (err: any) {
     console.error("Transcription API error:", err);
     res.status(500).json({ error: "Unable to transcribe voice. Please try again." });

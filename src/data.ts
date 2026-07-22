@@ -12,13 +12,14 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
   {
     id: "insp-1",
     title: "hey i want this",
-    url: "https://youtube.com/watch?v=F384k9d",
+    url: "https://www.youtube.com/watch?v=L_LUpnjgPso",
     notes: "“hey i want this”",
     tags: ["Raw Inspiration", "Direct Cut"],
     platform: "YOUTUBE",
     board: "📹 youtube",
     createdAt: "Jul 19, 2026",
     isFavorite: false,
+    imageUrl: "https://img.youtube.com/vi/L_LUpnjgPso/hqdefault.jpg",
     aiStatus: "failed",
     aiAnalysis: null
   },
@@ -32,6 +33,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "📸 Instagram",
     createdAt: "Jul 19, 2026",
     isFavorite: false,
+    imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "A masterclass in rapid focal alignment and directional flow. By accelerating camera whips at the transition edge and keeping subjects framed in the exact visual quadrant, this style provides flawless visual continuation.",
@@ -60,6 +62,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "📌 Pinterest",
     createdAt: "Jul 19, 2026",
     isFavorite: false,
+    imageUrl: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "A masterclass in balancing rigid structural alignment with bold visual contrast. By blending mathematical Bauhaus spacing rules with stark, high-contrast color blocks, this style transforms standard portfolio grids into premium, editorial-grade layouts.",
@@ -88,6 +91,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "💡 Random Ideas",
     createdAt: "Jul 19, 2026",
     isFavorite: false,
+    imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "A masterclass in depth-layering through mesh overlays, micro-borders, and high-frequency grids. It uses a very dark space combined with glowing vector details to establish immediate technical premium quality.",
@@ -109,13 +113,14 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
   {
     id: "insp-5",
     title: "Retention-Hook Video Blueprint",
-    url: "https://youtube.com/watch?v=teaser-hooks",
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     notes: "“Teaser loop with immediate visual pattern interrupt to spike retentiveness on shorts”",
     tags: ["Retention", "Hook", "Cinematic"],
     platform: "YOUTUBE",
     board: "📹 youtube",
     createdAt: "Jul 18, 2026",
     isFavorite: true,
+    imageUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "This framework centers around immediate narrative disruption, followed by an elegant build-up of suspense. Rather than introducing the product, the hook focuses on a specific frustration or curious visual pattern.",
@@ -144,6 +149,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "💡 Random Ideas",
     createdAt: "Jul 17, 2026",
     isFavorite: false,
+    imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "Utilizes vertical-oriented, floating side navigation panes that dock and undock dynamically. Tab items feature active glow rings and background translucence.",
@@ -172,6 +178,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "💡 Random Ideas",
     createdAt: "Jul 16, 2026",
     isFavorite: true,
+    imageUrl: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "A perfect application of minimal luxury interfaces. Focuses on extremely large display typography, tiny subtexts, and razor-sharp 1px dark grey grid lines.",
@@ -200,6 +207,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "📸 Instagram",
     createdAt: "Jul 15, 2026",
     isFavorite: false,
+    imageUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "Centers around beautiful cinematic portrait captures with warm amber grading. Subjects are positioned asymmetrical to the text overlay.",
@@ -228,6 +236,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "💡 Random Ideas",
     createdAt: "Jul 14, 2026",
     isFavorite: true,
+    imageUrl: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "Arranges statistical visualizations, icons, and status values into varying sizes of rounded blocks, creating a grid reminiscent of bento boxes.",

@@ -227,6 +227,208 @@ export default function AnalysisPage({
     );
   };
 
+  const isPinterest = 
+    inspiration.platform === "PINTEREST" || 
+    inspiration.board.toLowerCase().includes("pinterest") ||
+    (Boolean(inspiration.url) && (inspiration.url.toLowerCase().includes("pinterest.com") || inspiration.url.toLowerCase().includes("pin.it")));
+
+  if (isPinterest) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-4xl mx-auto px-6 py-8 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30"
+      >
+        {/* Top Bar Navigation & Actions */}
+        <div className="flex items-center justify-between pb-6 mb-8 border-b border-[#23242B]">
+          <button
+            onClick={onBack}
+            className="text-xs font-mono uppercase tracking-wider text-brand-muted hover:text-white px-3.5 py-2 rounded-xl bg-[#111217] border border-[#23242B] flex items-center gap-2 transition-all cursor-pointer font-bold"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#4F8CFF]" /> Back to Vault
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onToggleFavorite(inspiration.id)}
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                inspiration.isFavorite
+                  ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-500"
+                  : "bg-[#111217] border-[#23242B] text-brand-muted hover:text-white"
+              }`}
+            >
+              <Star className={`w-4 h-4 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
+            </button>
+
+            {showDeleteConfirm ? (
+              <div className="flex items-center gap-2 bg-[#1b1c22]/90 border border-red-900/40 rounded-xl p-1">
+                <span className="text-[10px] font-mono uppercase text-red-400 px-2 font-bold">Delete pin?</span>
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-2.5 py-1 text-[10px] font-mono text-brand-muted">Cancel</button>
+                <button onClick={() => { onDelete(inspiration.id); onBack(); }} className="px-2.5 py-1 text-[10px] font-mono bg-red-600 text-white rounded font-bold">Confirm</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-10 h-10 rounded-xl bg-red-950/10 border border-red-900/30 text-red-400 flex items-center justify-center hover:bg-red-950/30 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Pinterest Visual Detail Card */}
+        <div className="space-y-8">
+          
+          {/* TOP: Large Image */}
+          {inspiration.imageUrl ? (
+            <div className="w-full rounded-3xl overflow-hidden border border-[#23242B] bg-[#09090B] shadow-2xl relative max-h-[70vh] flex items-center justify-center">
+              <img
+                referrerPolicy="no-referrer"
+                src={inspiration.imageUrl}
+                alt={inspiration.title}
+                className="w-full h-auto max-h-[70vh] object-contain cursor-zoom-in"
+                onClick={() => setIsLightboxOpen(true)}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-64 rounded-3xl border border-[#23242B] bg-[#09090B] flex flex-col items-center justify-center p-8 text-center text-brand-muted">
+              <div className="w-12 h-12 rounded-full bg-[#111217] border border-[#23242B] flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5 text-rose-400" />
+              </div>
+              <span className="text-sm font-mono uppercase tracking-wider font-semibold text-brand-muted">
+                No Preview Available
+              </span>
+            </div>
+          )}
+
+          {/* BELOW: User Title */}
+          <div className="space-y-4">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="bg-[#111217] text-white font-sans font-semibold text-2xl md:text-3xl tracking-tight p-3.5 rounded-2xl border border-[#4F8CFF] focus:outline-none flex-1 font-sans"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
+                  onBlur={handleSaveTitle}
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div className="group relative flex items-start justify-between gap-4">
+                <div>
+                  <h1 
+                    className="font-sans font-semibold text-3xl md:text-4xl tracking-tight text-white leading-tight cursor-pointer"
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    {inspiration.title}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-2 text-xs font-mono text-brand-muted uppercase tracking-wider font-bold">
+                    <span className="text-rose-400 flex items-center gap-1">📌 Pinterest</span>
+                    <span>•</span>
+                    <span>Saved {inspiration.createdAt}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditingTitle(true)}
+                  className="opacity-0 group-hover:opacity-100 text-[#4F8CFF] hover:text-white p-2 rounded-lg bg-[#111217] border border-[#23242B] transition-opacity cursor-pointer flex-shrink-0"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* BELOW: Why I saved this / User description */}
+          <div className="pt-6 border-t border-[#23242B]/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-brand-muted font-bold">
+                Why I saved this
+              </h3>
+              {!isEditingNotes && (
+                <button
+                  onClick={() => setIsEditingNotes(true)}
+                  className="text-xs text-[#4F8CFF] hover:text-white transition-colors font-sans flex items-center gap-1"
+                >
+                  <Edit2 className="w-3 h-3" /> Edit Note
+                </button>
+              )}
+            </div>
+
+            {isEditingNotes ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editedNotes}
+                  onChange={(e) => setEditedNotes(e.target.value)}
+                  className="w-full bg-[#111217] border border-[#23242B] focus:border-[#4F8CFF] p-4 rounded-xl text-base leading-relaxed text-white focus:outline-none min-h-[100px] font-sans"
+                  autoFocus
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={() => setIsEditingNotes(false)} className="text-xs text-brand-muted px-3 py-1.5">Cancel</button>
+                  <button onClick={handleSaveNotes} className="text-xs bg-[#4F8CFF] text-white font-semibold px-4 py-1.5 rounded-lg">Save</button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                onClick={() => setIsEditingNotes(true)}
+                className="text-base text-white/90 leading-relaxed cursor-pointer hover:bg-white/[0.02] p-3 -m-3 rounded-xl transition-colors whitespace-pre-wrap font-sans"
+              >
+                {inspiration.notes || "Add why this inspired you..."}
+              </div>
+            )}
+          </div>
+
+          {/* Reference Link & Open on Pinterest button */}
+          {inspiration.url && (
+            <div className="pt-6 border-t border-[#23242B]/60 space-y-3">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-brand-muted font-bold">
+                Reference Link
+              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#111217] border border-[#23242B]">
+                <div className="truncate text-xs font-mono text-brand-muted max-w-md">
+                  {inspiration.url}
+                </div>
+                <a
+                  href={inspiration.url}
+                  target="_blank"
+                  referrerPolicy="no-referrer"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-sans text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer shrink-0"
+                >
+                  Open on Pinterest <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Lightbox Modal */}
+        {isLightboxOpen && inspiration.imageUrl && (
+          <div 
+            className="fixed inset-0 bg-[#09090B]/90 backdrop-blur-md z-50 flex items-center justify-center p-4 cursor-pointer"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <div className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-[#23242B] shadow-2xl">
+              <img 
+                referrerPolicy="no-referrer" 
+                src={inspiration.imageUrl} 
+                className="max-w-full max-h-[85vh] object-contain" 
+                alt="Full size preview" 
+              />
+              <div className="absolute top-4 right-4 bg-[#111217] border border-[#23242B] text-white text-xs px-3 py-1.5 rounded-lg font-mono font-bold hover:bg-[#23242B]">
+                CLOSE
+              </div>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}

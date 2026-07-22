@@ -3,6 +3,8 @@ import path from "path";
 import dotenv from "dotenv";
 import transcribeHandler from "./api/transcribe";
 import analyzeHandler from "./api/analyze";
+import pinterestMetadataHandler from "./api/pinterest-metadata";
+import previewImageHandler from "./api/preview-image";
 
 dotenv.config();
 
@@ -15,6 +17,8 @@ const PORT = 3000;
 // Mount serverless function handlers as Express routes for local development
 app.post("/api/transcribe", transcribeHandler);
 app.post("/api/analyze", analyzeHandler);
+app.post("/api/pinterest-metadata", pinterestMetadataHandler);
+app.post("/api/preview-image", previewImageHandler);
 
 // Serve frontend assets in production / development
 async function setupVite() {

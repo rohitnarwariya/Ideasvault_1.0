@@ -5,6 +5,7 @@ import {
   Trash2, AlertCircle, CheckCircle, Volume2, Music 
 } from "lucide-react";
 import { Inspiration, Platform } from "../types";
+import { fetchPreviewImage } from "../lib/preview";
 
 interface SaveModalProps {
   onClose: () => void;
@@ -111,6 +112,15 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
     }
   };
 
+  // Pinterest metadata state
+  const [isFetchingPinterest, setIsFetchingPinterest] = useState(false);
+  const [pinterestMetadata, setPinterestMetadata] = useState<{
+    previewImage?: string | null;
+    title?: string | null;
+    description?: string | null;
+    websiteUrl?: string | null;
+  } | null>(null);
+
   // Dynamically analyze URL to detect platform, update display platform, validate URL, and auto-select collection
   useEffect(() => {
     const trimmedUrl = url.trim();
@@ -119,6 +129,8 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
 
     if (trimmedUrl === "") {
       setIsUrlValid(true);
+      setPinterestMetadata(null);
+      setIsFetchingPinterest(false);
       return;
     }
 
@@ -129,27 +141,39 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
     const displayPlat = getDisplayPlatform(trimmedUrl);
     const targetColl = getTargetCollectionName(displayPlat);
 
-    if (!hasManuallySelectedBoard) {
-      const cleanTarget = targetColl.toLowerCase();
-      const existingBoard = localBoardsRef.current.find(b => {
-        const cleanB = b.replace(/[^\w\s]/g, "").trim().toLowerCase();
-        return cleanB === cleanTarget;
-      });
+    // Auto-select collection when URL recognized
+    const cleanTarget = targetColl.toLowerCase();
+    const existingBoard = localBoardsRef.current.find(b => {
+      const cleanB = b.replace(/[^\w\s]/g, "").trim().toLowerCase();
+      return cleanB === cleanTarget;
+    });
 
-      if (existingBoard) {
-        setSelectedBoard(existingBoard);
-      } else {
-        // Automatically create and add the collection to localBoards if it doesn't exist
-        setLocalBoards(prev => {
-          if (!prev.includes(targetColl)) {
-            return [...prev, targetColl];
-          }
-          return prev;
-        });
-        setSelectedBoard(targetColl);
-      }
+    if (existingBoard) {
+      setSelectedBoard(existingBoard);
+    } else {
+      setLocalBoards(prev => {
+        if (!prev.includes(targetColl)) {
+          return [...prev, targetColl];
+        }
+        return prev;
+      });
+      setSelectedBoard(targetColl);
     }
-  }, [url, hasManuallySelectedBoard]);
+
+    // Auto fetch preview image for all supported platforms and websites
+    setIsFetchingPinterest(true);
+    fetchPreviewImage(trimmedUrl)
+      .then(imgUrl => {
+        setIsFetchingPinterest(false);
+        if (imgUrl) {
+          setImageFile(prev => prev || imgUrl);
+        }
+      })
+      .catch(err => {
+        console.warn("Preview image fetch error:", err);
+        setIsFetchingPinterest(false);
+      });
+  }, [url]);
 
   // Voice memo recording timer and cleanup
   useEffect(() => {
@@ -248,6 +272,18 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                     }
                     return transcriptText;
                   });
+
+                  // If Title field is empty, populate generated descriptive title
+                  if (data.title && data.title.trim() !== "") {
+                    const genTitle = data.title.trim();
+                    setTitle(prevTitle => {
+                      const current = prevTitle ? prevTitle.trim() : "";
+                      if (!current || current.toLowerCase() === "untitled" || current.toLowerCase() === "voice memo") {
+                        return genTitle;
+                      }
+                      return prevTitle; // Never overwrite if user already typed a title
+                    });
+                  }
                 }
               } catch (err) {
                 console.error("Transcription API error:", err);
@@ -328,6 +364,18 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
     }
     await new Promise(resolve => setTimeout(resolve, 400));
 
+    let finalImageUrl = imageFile;
+    if (!finalImageUrl && url.trim()) {
+      try {
+        const fetchedImg = await fetchPreviewImage(url.trim());
+        if (fetchedImg) {
+          finalImageUrl = fetchedImg;
+        }
+      } catch (err) {
+        console.warn("Could not fetch preview image during submit:", err);
+      }
+    }
+
     try {
       await onSave({
         title: title.trim() || undefined,
@@ -335,7 +383,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
         notes: notes.trim(),
         board: selectedBoard,
         platform: platform,
-        imageUrl: imageFile || undefined,
+        imageUrl: finalImageUrl || undefined,
         voiceUrl: recordSeconds > 0 ? "simulated-voice.mp3" : undefined,
         voiceTranscript: voiceTranscript || undefined
       });
@@ -563,6 +611,11 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
             {!isUrlValid && url.trim() !== "" && (
               <p className="text-[10px] text-red-400 font-sans mt-1.5 leading-relaxed font-semibold flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" /> Please enter a valid reference URL format.
+              </p>
+            )}
+            {isFetchingPinterest && (
+              <p className="text-[10px] text-rose-400 font-mono mt-1.5 flex items-center gap-1.5 animate-pulse font-semibold">
+                <Sparkles className="w-3 h-3" /> Fetching Pinterest Open Graph preview & details...
               </p>
             )}
           </div>

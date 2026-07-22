@@ -5,6 +5,7 @@ import {
   ChevronRight, ArrowUpRight, Grid, HelpCircle, Key, Lock, Play, X, Lightbulb, Bookmark 
 } from "lucide-react";
 import { Inspiration } from "../types";
+import InspirationCard from "./InspirationCard";
 
 interface DashboardProps {
   inspirations: Inspiration[];
@@ -295,7 +296,7 @@ export default function Dashboard({
         </span>
       </div>
 
-      {/* Grid List */}
+      {/* Grid or Masonry List */}
       {filteredInspirations.length === 0 ? (
         <motion.div 
           initial={{ opacity: 0, y: 12 }}
@@ -317,118 +318,78 @@ export default function Dashboard({
             + Save First Idea
           </button>
         </motion.div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ) : (cleanBoardName.toLowerCase().includes("pinterest") || activeBoard.toLowerCase().includes("pinterest")) ? (
+        /* PINTEREST MASONRY GALLERY */
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
           {filteredInspirations.map(insp => (
             <motion.div
               key={insp.id}
               layout
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="bg-[#111217] rounded-3xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer"
+              transition={{ duration: 0.25 }}
+              className="break-inside-avoid bg-[#111217] rounded-2xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer flex flex-col group mb-6"
               onClick={() => onViewInspiration(insp)}
             >
-              {/* Optional Thumbnail: Only show an image if the user actually uploaded one */}
-              {insp.imageUrl && (
-                <div className="h-44 overflow-hidden border-b border-[#23242B]/30 relative">
-                  <img 
-                    referrerPolicy="no-referrer" 
-                    src={insp.imageUrl} 
-                    className="w-full h-full object-cover" 
-                    alt="Inspiration reference" 
+              {/* Large Image Preview (main focus) */}
+              {insp.imageUrl ? (
+                <div className="w-full overflow-hidden bg-[#09090B]">
+                  <img
+                    referrerPolicy="no-referrer"
+                    src={insp.imageUrl}
+                    alt={insp.title}
+                    className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
                   />
+                </div>
+              ) : (
+                <div className="w-full h-48 bg-[#09090B] border-b border-[#23242B] flex flex-col items-center justify-center p-6 text-center text-brand-muted">
+                  <div className="w-10 h-10 rounded-full bg-[#111217] border border-[#23242B] flex items-center justify-center mb-2">
+                    <Sparkles className="w-4 h-4 text-rose-400" />
+                  </div>
+                  <span className="text-xs font-mono uppercase tracking-wider font-semibold text-brand-muted/70">
+                    No Preview Available
+                  </span>
                 </div>
               )}
 
-              {/* Main Card Content */}
-              <div className="p-6 flex-1 flex flex-col justify-between">
+              {/* Bottom Card Content */}
+              <div className="p-4 flex flex-col justify-between flex-1">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    {/* Platform Badge */}
-                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-mono border uppercase tracking-wider font-semibold ${
-                      insp.platform === "YOUTUBE" ? "bg-red-950/20 text-red-400 border-red-900/30" :
-                      insp.platform === "INSTAGRAM" ? "bg-purple-950/20 text-purple-400 border-purple-900/30" :
-                      insp.platform === "PINTEREST" ? "bg-rose-950/20 text-rose-400 border-rose-900/30" :
-                      insp.platform === "WEBSITE" ? "bg-teal-950/20 text-teal-400 border-teal-900/30" :
-                      "bg-zinc-950/20 text-zinc-400 border-zinc-900/30"
-                    }`}>
-                      {insp.platform === "PINTEREST" ? "📌 Pinterest" :
-                       insp.platform === "INSTAGRAM" ? "📸 Instagram" :
-                       insp.platform === "YOUTUBE" ? "📹 YouTube" :
-                       `🌐 ${insp.platform}`}
-                    </span>
-
-                    {/* Small saved date */}
-                    <span className="text-[10px] font-mono text-brand-muted/70">{insp.createdAt}</span>
-                  </div>
-
                   {/* Title */}
-                  <h3 className="font-sans font-bold text-xl text-white group-hover:text-[#4F8CFF] transition-colors leading-tight line-clamp-2">
+                  <h3 className="font-sans font-semibold text-sm text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
                     {insp.title}
                   </h3>
 
-                  {/* Description: Why I saved this */}
+                  {/* Description: 2 lines max */}
                   {(insp.notes || insp.voiceTranscript) && (
-                    <p className="mt-4 text-xs text-brand-muted/90 line-clamp-3 leading-relaxed font-sans">
+                    <p className="mt-2 text-xs text-brand-muted/80 line-clamp-2 leading-relaxed font-sans">
                       {insp.notes || insp.voiceTranscript}
                     </p>
                   )}
+                </div>
 
-                  {/* Tags */}
-                  {insp.tags && insp.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-4">
-                      {insp.tags.map(t => (
-                        <span key={t} className="text-[9px] font-mono bg-[#09090B]/60 px-2.5 py-0.5 rounded text-brand-muted border border-[#23242B]/30">
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                {/* Small Footer */}
+                <div className="mt-4 pt-3 border-t border-[#23242B]/40 flex items-center justify-between text-[10px] font-mono text-brand-muted">
+                  <span>{insp.createdAt}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-950/40 text-rose-400 border border-rose-900/40 font-bold uppercase tracking-wider flex items-center gap-1">
+                    📌 Pinterest
+                  </span>
                 </div>
               </div>
-
-              {/* Bottom Footer Section */}
-              <div className="px-6 py-4 bg-[#09090B]/20 border-t border-[#23242B]/30 flex items-center justify-between text-[10px] font-mono text-brand-muted">
-                {/* Collection / Board */}
-                <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4F8CFF]">
-                  <Folder className="w-3.5 h-3.5" /> {insp.board.replace(/[^\w\s]/g, "").trim()}
-                </span>
-
-                <div className="flex items-center gap-4">
-                  {/* Favorite Toggle at Bottom */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavorite(insp.id);
-                    }}
-                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                      insp.isFavorite 
-                        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" 
-                        : "bg-[#09090B] border-[#23242B]/80 text-brand-muted hover:text-white"
-                    }`}
-                  >
-                    <Star className={`w-3.5 h-3.5 ${insp.isFavorite ? "fill-yellow-500" : ""}`} />
-                  </button>
-
-                  {/* Visit Source Icon */}
-                  {insp.url && (
-                    <a 
-                      href={insp.url} 
-                      target="_blank" 
-                      referrerPolicy="no-referrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 rounded-lg border border-[#23242B]/80 bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/30 transition-colors"
-                      title="Visit reference link"
-                    >
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-
             </motion.div>
+          ))}
+        </div>
+      ) : (
+        /* STANDARD GRID FOR ALL COLLECTIONS */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredInspirations.map(insp => (
+            <InspirationCard
+              key={insp.id}
+              inspiration={insp}
+              onToggleFavorite={onToggleFavorite}
+              onViewInspiration={onViewInspiration}
+            />
           ))}
         </div>
       )}
