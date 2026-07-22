@@ -4,6 +4,7 @@ import {
   Lock, Play, ArrowRight, Sparkles, Chrome, Mic, Search, Layers, Compass, HelpCircle, 
   ChevronDown, ChevronUp, Star, Check, Link, Pencil, Folder
 } from "lucide-react";
+import ExtensionModal from "./ExtensionModal";
 
 interface LandingPageProps {
   onStart: () => void;
@@ -193,6 +194,7 @@ function FloatingCard({ platform, stats, notes, className, yRange, duration }: F
 
 export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [showExtensionModal, setShowExtensionModal] = useState(false);
 
   const faqs = [
     {
@@ -234,7 +236,9 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
           <nav className="hidden md:flex items-center gap-8 text-[11px] font-bold tracking-widest uppercase text-brand-muted">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-            <a href="#extension" className="hover:text-white transition-colors">Extension</a>
+            <button onClick={() => setShowExtensionModal(true)} className="hover:text-[#4F8CFF] transition-colors flex items-center gap-1">
+              <Chrome className="w-3.5 h-3.5 text-[#4F8CFF]" /> Extension
+            </button>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
@@ -1042,6 +1046,11 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
           </div>
         </div>
       </footer>
+
+      <ExtensionModal 
+        isOpen={showExtensionModal} 
+        onClose={() => setShowExtensionModal(false)} 
+      />
     </div>
   );
 }

@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, Star, Folder, ExternalLink, Sparkles, Filter, Plus, Trash2, 
-  ChevronRight, ArrowUpRight, Grid, HelpCircle, Key, Lock, Play, X, Lightbulb, Bookmark 
+  ChevronRight, ArrowUpRight, Grid, HelpCircle, Key, Lock, Play, X, Lightbulb, Bookmark, Chrome 
 } from "lucide-react";
 import { Inspiration } from "../types";
 import InspirationCard from "./InspirationCard";
+import ExtensionModal from "./ExtensionModal";
 
 interface DashboardProps {
   inspirations: Inspiration[];
@@ -38,6 +39,7 @@ export default function Dashboard({
   const [newBoardName, setNewBoardName] = useState("");
   const [activeWatchVideoId, setActiveWatchVideoId] = useState<string | null>(null);
   const [activeWatchVideoTitle, setActiveWatchVideoTitle] = useState<string>("");
+  const [showExtensionModal, setShowExtensionModal] = useState(false);
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,13 +197,28 @@ export default function Dashboard({
           </p>
         </div>
 
-        <button
-          onClick={onAddInspiration}
-          className="px-6 py-3.5 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-2 cursor-pointer self-start md:self-center uppercase tracking-widest font-semibold"
-        >
-          + SAVE INSPIRATION <Sparkles className="w-4 h-4 fill-current text-white" />
-        </button>
+        <div className="flex items-center gap-3 self-start md:self-center">
+          <button
+            onClick={() => setShowExtensionModal(true)}
+            className="px-4 py-3 bg-[#111217] hover:bg-[#181920] border border-[#23242B] text-white font-sans font-medium rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+          >
+            <Chrome className="w-4 h-4 text-[#4F8CFF]" />
+            Chrome Extension
+          </button>
+
+          <button
+            onClick={onAddInspiration}
+            className="px-6 py-3.5 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-widest font-semibold"
+          >
+            + SAVE INSPIRATION <Sparkles className="w-4 h-4 fill-current text-white" />
+          </button>
+        </div>
       </div>
+
+      <ExtensionModal 
+        isOpen={showExtensionModal} 
+        onClose={() => setShowExtensionModal(false)} 
+      />
 
       {/* Filter boards strip & Search panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-center">
