@@ -149,6 +149,7 @@ let state = {
   recordTimer: null,
   mediaRecorder: null,
   audioChunks: [],
+  micPermissionDenied: false,
   isSaving: false,
   errorMessage: '',
   loginEmail: '',
@@ -398,9 +399,40 @@ async function handleLogout() {
   render();
 }
 
-// Voice Recording Handlers
+// Microphone Permission & Recording Logic
+async function requestMicPermission() {
+  syncInputsToState();
+  state.errorMessage = '';
+  state.micPermissionDenied = false;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => track.stop());
+    state.micPermissionDenied = false;
+    await startRecording();
+  } catch (err) {
+    console.warn('[IdeaVault Mic Permission Error, opening permission page]:', err);
+    state.micPermissionDenied = true;
+    state.errorMessage = 'Please allow microphone access in the browser permission tab.';
+    render();
+
+    if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+      try {
+        chrome.tabs.create({ url: chrome.runtime.getURL('permission.html') });
+      } catch (e) {
+        window.open('permission.html', '_blank');
+      }
+    }
+  }
+}
+
 async function toggleRecording() {
   syncInputsToState();
+  if (state.micPermissionDenied) {
+    await requestMicPermission();
+    return;
+  }
+
   if (state.isRecording) {
     stopRecording();
   } else if (!state.isUploading && !state.isTranscribing) {
@@ -410,6 +442,7 @@ async function toggleRecording() {
 
 async function startRecording() {
   state.errorMessage = '';
+  state.micPermissionDenied = false;
   
   if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     state.errorMessage = 'Microphone access is not supported in this environment.';
@@ -474,8 +507,9 @@ async function startRecording() {
   } catch (err) {
     console.error('[IdeaVault Mic Error]:', err);
     state.isRecording = false;
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      state.errorMessage = 'Microphone permission denied. Please allow microphone access.';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.includes('Permission denied')) {
+      state.micPermissionDenied = true;
+      state.errorMessage = 'Microphone access denied. Click "Grant Microphone Access" to allow recording.';
     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
       state.errorMessage = 'No microphone found on your device.';
     } else {
@@ -559,14 +593,11 @@ async function uploadAndTranscribe(audioBlob, mimeType) {
 
     if (data && data.transcript) {
       const cleanTranscript = data.transcript.trim();
+      
+      // Separate Voice Transcript field (DO NOT overwrite or append to Description)
       state.voiceTranscript = cleanTranscript;
 
-      if (cleanTranscript) {
-        state.description = state.description 
-          ? `${state.description}\n\n[Voice Memo]: "${cleanTranscript}"`
-          : cleanTranscript;
-      }
-
+      // Auto fill Title if currently empty
       if (!state.title || !state.title.trim()) {
         if (data.title && data.title.trim()) {
           state.title = data.title.trim();
@@ -812,31 +843,33 @@ function render() {
   // Save View
   const platformIcon = PLATFORM_ICONS[state.platform] || '🌐';
 
-  let voiceBtnLabel = 'Voice Note';
-  let voiceBtnIcon = '🎙️';
+  // Determine Voice Button Label and Style
+  let voiceBtnLabel = '🎙️ Start Recording';
   let voiceBtnBg = '#181920';
   let voiceBtnColor = '#A1A1AA';
   let voiceBtnBorder = '#23242B';
   let voiceBtnClass = '';
   let voiceBtnDisabled = false;
 
-  if (state.isRecording) {
-    voiceBtnLabel = `Stop Recording (${formatTime(state.recordSeconds)})`;
-    voiceBtnIcon = '⏹️';
+  if (state.micPermissionDenied) {
+    voiceBtnLabel = '🎙️ Grant Microphone Access';
+    voiceBtnBg = 'rgba(239, 68, 68, 0.15)';
+    voiceBtnColor = '#FCA5A5';
+    voiceBtnBorder = 'rgba(239, 68, 68, 0.4)';
+  } else if (state.isRecording) {
+    voiceBtnLabel = `⏹️ Stop Recording (${formatTime(state.recordSeconds)})`;
     voiceBtnBg = '#EF4444';
     voiceBtnColor = '#FFFFFF';
     voiceBtnBorder = '#EF4444';
     voiceBtnClass = 'recording-pulse';
   } else if (state.isUploading) {
-    voiceBtnLabel = 'Uploading...';
-    voiceBtnIcon = '⏳';
+    voiceBtnLabel = '⏳ Uploading...';
     voiceBtnBg = '#181920';
     voiceBtnColor = '#4F8CFF';
     voiceBtnBorder = '#4F8CFF';
     voiceBtnDisabled = true;
   } else if (state.isTranscribing) {
-    voiceBtnLabel = 'Transcribing...';
-    voiceBtnIcon = '✨';
+    voiceBtnLabel = '✨ Transcribing...';
     voiceBtnBg = '#181920';
     voiceBtnColor = '#8B5CF6';
     voiceBtnBorder = '#8B5CF6';
@@ -844,10 +877,10 @@ function render() {
   }
 
   container.innerHTML = `
-    <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 520px; justify-content: space-between;">
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 520px; justify-content: space-between;">
       
       <!-- Top Bar -->
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #23242B; padding-bottom: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #23242B; padding-bottom: 10px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <div style="width: 26px; height: 26px; background: linear-gradient(135deg, #4F8CFF, #8B5CF6); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px;">💡</div>
           <span style="font-weight: 700; font-size: 14px; letter-spacing: -0.2px;">Save Inspiration</span>
@@ -862,25 +895,28 @@ function render() {
       </div>
 
       ${state.errorMessage ? `
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 8px 12px; border-radius: 8px; font-size: 11px;">
-          ${escapeHtml(state.errorMessage)}
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 8px 12px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span>${escapeHtml(state.errorMessage)}</span>
+          ${state.micPermissionDenied ? `
+            <button id="grant-mic-btn" style="background: #EF4444; color: white; border: none; font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap;">Grant Mic</button>
+          ` : ''}
         </div>
       ` : ''}
 
       <!-- Page Thumbnail & Platform Badge -->
-      <div style="display: flex; gap: 12px; background: #111217; border: 1px solid #23242B; padding: 10px; border-radius: 12px; align-items: center;">
+      <div style="display: flex; gap: 10px; background: #111217; border: 1px solid #23242B; padding: 8px 10px; border-radius: 10px; align-items: center;">
         ${state.imageUrl ? `
-          <img src="${escapeHtml(state.imageUrl)}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #23242B; background: #000;" onError="this.style.display='none'">
+          <img src="${escapeHtml(state.imageUrl)}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #23242B; background: #000;" onError="this.style.display='none'">
         ` : `
-          <div style="width: 56px; height: 56px; background: #181920; border-radius: 8px; border: 1px solid #23242B; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <div style="width: 48px; height: 48px; background: #181920; border-radius: 6px; border: 1px solid #23242B; display: flex; align-items: center; justify-content: center; font-size: 18px;">
             ${platformIcon}
           </div>
         `}
         <div style="flex: 1; overflow: hidden;">
-          <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(79, 140, 255, 0.1); border: 1px solid rgba(79, 140, 255, 0.2); color: #4F8CFF; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 4px;">
+          <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(79, 140, 255, 0.1); border: 1px solid rgba(79, 140, 255, 0.2); color: #4F8CFF; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 2px;">
             ${platformIcon} ${escapeHtml(state.platform)}
           </div>
-          <p style="font-size: 11px; color: #A1A1AA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <p style="font-size: 10px; color: #A1A1AA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${escapeHtml(state.url)}
           </p>
         </div>
@@ -888,25 +924,44 @@ function render() {
 
       <!-- Title Input -->
       <div>
-        <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 4px; letter-spacing: 0.5px;">TITLE</label>
+        <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 3px; letter-spacing: 0.5px;">TITLE</label>
         <input type="text" id="inp-title" value="${escapeHtml(state.title)}" placeholder="Enter a descriptive title..." style="font-weight: 600;">
       </div>
 
-      <!-- Description Input & Voice Note -->
+      <!-- Description Input -->
       <div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; letter-spacing: 0.5px;">DESCRIPTION</label>
-          <button id="voice-btn" class="${voiceBtnClass}" ${voiceBtnDisabled ? 'disabled' : ''} style="background: ${voiceBtnBg}; color: ${voiceBtnColor}; border: 1px solid ${voiceBtnBorder}; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; cursor: ${voiceBtnDisabled ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-            <span>${voiceBtnIcon}</span>
-            <span>${escapeHtml(voiceBtnLabel)}</span>
-          </button>
+        <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 3px; letter-spacing: 0.5px;">DESCRIPTION</label>
+        <textarea id="inp-desc" placeholder="Write your notes here..." style="min-height: 52px;">${escapeHtml(state.description)}</textarea>
+      </div>
+
+      <!-- Voice Transcript Section (Placed directly BELOW Description) -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; letter-spacing: 0.5px;">VOICE TRANSCRIPT</label>
+          ${state.voiceTranscript ? `
+            <button id="clear-voice-btn" style="background: none; border: none; color: #71717A; font-size: 10px; cursor: pointer; text-decoration: underline;">Clear</button>
+          ` : ''}
         </div>
-        <textarea id="inp-desc" placeholder="Write why you saved this inspiration..." style="min-height: 64px;">${escapeHtml(state.description)}</textarea>
+
+        <!-- Read-only transcript box -->
+        <div style="background-color: #09090B; border: 1px solid #23242B; border-radius: 8px; padding: 8px 10px; min-height: 48px; max-height: 72px; overflow-y: auto; font-size: 12px; color: ${state.voiceTranscript ? '#E4E4E7' : '#52525B'}; line-height: 1.4;">
+          ${state.voiceTranscript ? escapeHtml(state.voiceTranscript) : (
+            state.isRecording ? '🎙️ Listening to your voice...' :
+            state.isUploading ? '⏳ Processing audio file...' :
+            state.isTranscribing ? '✨ Converting speech to text...' :
+            'Recorded voice transcript will appear here...'
+          )}
+        </div>
+
+        <!-- Record / Grant Mic Action Button -->
+        <button id="voice-btn" class="${voiceBtnClass}" ${voiceBtnDisabled ? 'disabled' : ''} style="margin-top: 2px; width: 100%; height: 34px; background: ${voiceBtnBg}; color: ${voiceBtnColor}; border: 1px solid ${voiceBtnBorder}; font-size: 11px; font-weight: 600; border-radius: 8px; cursor: ${voiceBtnDisabled ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+          <span>${escapeHtml(voiceBtnLabel)}</span>
+        </button>
       </div>
 
       <!-- Collection Selector -->
       <div>
-        <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 4px; letter-spacing: 0.5px;">COLLECTION</label>
+        <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 3px; letter-spacing: 0.5px;">COLLECTION</label>
         <select id="inp-collection">
           ${(state.collections.length > 0 ? state.collections : DEFAULT_COLLECTIONS).map(c => `
             <option value="${escapeHtml(c.name)}" ${c.name === state.selectedCollection ? 'selected' : ''}>${escapeHtml(c.name)}</option>
@@ -915,7 +970,7 @@ function render() {
       </div>
 
       <!-- Action Buttons -->
-      <div style="display: flex; gap: 10px; margin-top: 6px;">
+      <div style="display: flex; gap: 10px; margin-top: 4px;">
         <button id="cancel-btn" class="btn-secondary" style="flex: 1; height: 38px;">
           Cancel
         </button>
@@ -930,7 +985,13 @@ function render() {
   // Attach Event Listeners
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('voice-btn')?.addEventListener('click', toggleRecording);
+  document.getElementById('grant-mic-btn')?.addEventListener('click', requestMicPermission);
   
+  document.getElementById('clear-voice-btn')?.addEventListener('click', () => {
+    state.voiceTranscript = '';
+    render();
+  });
+
   document.getElementById('inp-title')?.addEventListener('input', (e) => {
     state.title = e.target.value;
   });

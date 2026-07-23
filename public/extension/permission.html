@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IdeaVault — Grant Microphone Permission</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #09090B;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: #111217;
+      border: 1px solid #23242B;
+      padding: 32px;
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(79, 140, 255, 0.15);
+      border: 2px solid #4F8CFF;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px auto;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 13px;
+      color: #A1A1AA;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background: linear-gradient(135deg, #4F8CFF, #8B5CF6);
+      color: #FFFFFF;
+      border: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .status {
+      margin-top: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🎙️</div>
+    <h1>Microphone Access Required</h1>
+    <p>IdeaVault needs permission to use your microphone so you can record voice notes and convert them to text inspirations.</p>
+    <button id="grant-btn" class="btn">Grant Microphone Access</button>
+    <div id="status" class="status"></div>
+  </div>
+  <script src="permission.js"></script>
+</body>
+</html>
