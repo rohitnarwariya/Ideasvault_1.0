@@ -8,8 +8,7 @@
     "storage",
     "contextMenus",
     "scripting",
-    "tabs",
-    "audioCapture"
+    "tabs"
   ],
   "host_permissions": [
     "https://ideasvault-1-0.vercel.app/*",
