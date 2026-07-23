@@ -5,9 +5,6 @@ import transcribeHandler from "./api/transcribe";
 import analyzeHandler from "./api/analyze";
 import pinterestMetadataHandler from "./api/pinterest-metadata";
 import previewImageHandler from "./api/preview-image";
-import extensionAuthHandler from "./api/extension/auth";
-import extensionCollectionsHandler from "./api/extension/collections";
-import extensionSaveHandler from "./api/extension/save";
 
 dotenv.config();
 
@@ -33,12 +30,6 @@ app.post("/api/transcribe", transcribeHandler);
 app.post("/api/analyze", analyzeHandler);
 app.post("/api/pinterest-metadata", pinterestMetadataHandler);
 app.post("/api/preview-image", previewImageHandler);
-
-// Extension routes
-app.post("/api/extension/auth", extensionAuthHandler);
-app.get("/api/extension/collections", extensionCollectionsHandler);
-app.post("/api/extension/collections", extensionCollectionsHandler);
-app.post("/api/extension/save", extensionSaveHandler);
 
 // Serve frontend assets in production / development
 async function setupVite() {

@@ -1,5 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import esbuild from 'esbuild';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Pure JS Minimal Zip Generator (PK Zip format)
 function createZipBuffer(files) {
@@ -86,6 +90,30 @@ async function build() {
   const sourceDir = path.join(process.cwd(), 'chrome-extension');
   const targetDir = path.join(process.cwd(), 'public', 'extension');
   const publicDir = path.join(process.cwd(), 'public');
+
+  // Bundle popup.js using esbuild
+  const popupSrc = path.join(sourceDir, 'src', 'popup.js');
+  const popupOut = path.join(sourceDir, 'popup.js');
+
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  if (fs.existsSync(popupSrc)) {
+    await esbuild.build({
+      entryPoints: [popupSrc],
+      outfile: popupOut,
+      bundle: true,
+      format: 'esm',
+      target: 'es2022',
+      minify: false,
+      define: {
+        'process.env.NODE_ENV': '"production"',
+        'process.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+        'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey)
+      }
+    });
+    console.log("Bundled popup.js successfully.");
+  }
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
