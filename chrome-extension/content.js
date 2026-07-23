@@ -147,10 +147,13 @@ function extractPageMetadata() {
 }
 
 // Message Listener for Popup requests
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === "EXTRACT_METADATA") {
-    const metadata = extractPageMetadata();
-    sendResponse({ success: true, metadata });
-  }
-  return true;
-});
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request && request.type === "EXTRACT_METADATA") {
+      const metadata = extractPageMetadata();
+      sendResponse({ success: true, metadata });
+    }
+    return true;
+  });
+}
+

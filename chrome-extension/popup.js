@@ -2,6 +2,118 @@
 
 const API_BASE_URL = 'https://ideasvault-1-0.vercel.app';
 
+// Safe Extension Environment Check
+function isExtensionEnvironment() {
+  return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
+}
+
+// Safe Chrome/Browser Storage Wrapper
+const extensionStorage = {
+  get: async (keys) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      return new Promise((resolve) => {
+        try {
+          chrome.storage.local.get(keys, (res) => {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+              console.warn('[IdeaVault] storage.get warning:', chrome.runtime.lastError.message);
+            }
+            resolve(res || {});
+          });
+        } catch (e) {
+          console.warn('[IdeaVault] storage.get exception:', e);
+          resolve({});
+        }
+      });
+    } else {
+      const res = {};
+      const keyArray = Array.isArray(keys) ? keys : [keys];
+      keyArray.forEach(k => {
+        try {
+          const val = localStorage.getItem(`ideavault_${k}`);
+          if (val) res[k] = JSON.parse(val);
+        } catch (e) {
+          console.warn('[IdeaVault] localStorage parse error:', e);
+        }
+      });
+      return res;
+    }
+  },
+  set: async (obj) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      return new Promise((resolve) => {
+        try {
+          chrome.storage.local.set(obj, () => {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+              console.warn('[IdeaVault] storage.set warning:', chrome.runtime.lastError.message);
+            }
+            resolve();
+          });
+        } catch (e) {
+          console.warn('[IdeaVault] storage.set exception:', e);
+          resolve();
+        }
+      });
+    } else {
+      Object.keys(obj).forEach(k => {
+        try {
+          localStorage.setItem(`ideavault_${k}`, JSON.stringify(obj[k]));
+        } catch (e) {
+          console.warn('[IdeaVault] localStorage set error:', e);
+        }
+      });
+    }
+  },
+  remove: async (keys) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      return new Promise((resolve) => {
+        try {
+          chrome.storage.local.remove(keys, () => {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+              console.warn('[IdeaVault] storage.remove warning:', chrome.runtime.lastError.message);
+            }
+            resolve();
+          });
+        } catch (e) {
+          console.warn('[IdeaVault] storage.remove exception:', e);
+          resolve();
+        }
+      });
+    } else {
+      const keyArray = Array.isArray(keys) ? keys : [keys];
+      keyArray.forEach(k => {
+        try {
+          localStorage.removeItem(`ideavault_${k}`);
+        } catch (e) {}
+      });
+    }
+  }
+};
+
+// Safe External Link Opener
+function openExternalTab(url) {
+  if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+    try {
+      chrome.tabs.create({ url });
+    } catch (e) {
+      window.open(url, '_blank');
+    }
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+// Safe Resource URL Helper
+function getExtensionAssetUrl(path) {
+  if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.getURL === 'function') {
+    try {
+      return chrome.runtime.getURL(path);
+    } catch (e) {
+      console.warn('[IdeaVault] getURL exception:', e);
+    }
+  }
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
 // Enhanced Network Request Logging & Helper
 async function apiFetch(endpoint, options = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
@@ -104,26 +216,27 @@ function suggestCollection(urlStr) {
   return '💡 Random Ideas';
 }
 
-// Initialize Popup
-document.addEventListener('DOMContentLoaded', async () => {
-  render();
-  await checkAuthAndLoadData();
-});
-
-// Check Session in chrome.storage
-async function checkAuthAndLoadData() {
-  chrome.storage.local.get(['user', 'session', 'pendingContextSave'], async (res) => {
-    if (res.user && res.session) {
-      state.user = res.user;
-      state.session = res.session;
-      state.view = 'save';
-      await loadCollections();
-      await extractActiveTabMetadata(res.pendingContextSave);
-    } else {
-      state.view = 'login';
-    }
+// Initialize Popup safely
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', async () => {
     render();
+    await checkAuthAndLoadData();
   });
+}
+
+// Check Session safely
+async function checkAuthAndLoadData() {
+  const stored = await extensionStorage.get(['user', 'session', 'pendingContextSave']);
+  if (stored.user && stored.session) {
+    state.user = stored.user;
+    state.session = stored.session;
+    state.view = 'save';
+    await loadCollections();
+    await extractActiveTabMetadata(stored.pendingContextSave);
+  } else {
+    state.view = 'login';
+  }
+  render();
 }
 
 // Load Collections for user
@@ -149,50 +262,91 @@ async function loadCollections() {
   }
 }
 
-// Extract Metadata from Active Tab
+// Extract Metadata safely from Active Tab or Fallback
 async function extractActiveTabMetadata(pendingSave) {
-  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-    if (!tabs || !tabs[0]) return;
-    const tab = tabs[0];
-    state.url = tab.url || '';
-    state.selectedCollection = suggestCollection(state.url);
-
-    // If context menu triggered save
-    if (pendingSave && pendingSave.url) {
-      state.url = pendingSave.url || state.url;
-      state.title = pendingSave.title || '';
-      state.imageUrl = pendingSave.imageUrl || '';
-      if (pendingSave.selectionText) {
-        state.description = `"${pendingSave.selectionText}"`;
-      }
-      chrome.storage.local.remove('pendingContextSave');
-    }
-
-    // Request full metadata from content script
+  if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.query === 'function') {
     try {
-      chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_METADATA' }, (response) => {
-        if (response && response.success && response.metadata) {
-          const m = response.metadata;
-          state.platform = m.platform || 'OTHER';
-          state.url = m.url || state.url;
-          state.favicon = m.favicon || '';
-          
-          // Rule: Only auto-fill title if empty. Pinterest title should stay empty for user entry.
-          if (!state.title) {
-            state.title = m.title || '';
+      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+          console.warn('[IdeaVault] tabs.query warning:', chrome.runtime.lastError.message);
+        }
+        if (!tabs || !tabs[0]) {
+          fallbackActiveTab(pendingSave);
+          return;
+        }
+        const tab = tabs[0];
+        state.url = tab.url || '';
+        state.selectedCollection = suggestCollection(state.url);
+
+        if (pendingSave && pendingSave.url) {
+          state.url = pendingSave.url || state.url;
+          state.title = pendingSave.title || '';
+          state.imageUrl = pendingSave.imageUrl || '';
+          if (pendingSave.selectionText) {
+            state.description = `"${pendingSave.selectionText}"`;
           }
-          if (!state.imageUrl) {
-            state.imageUrl = m.imageUrl || '';
+          await extensionStorage.remove('pendingContextSave');
+        }
+
+        if (tab.id && typeof chrome.tabs.sendMessage === 'function') {
+          try {
+            chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_METADATA' }, (response) => {
+              if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                console.log('[IdeaVault] Content script not present on tab:', chrome.runtime.lastError.message);
+                if (!state.title) state.title = tab.title || '';
+                render();
+                return;
+              }
+              if (response && response.success && response.metadata) {
+                const m = response.metadata;
+                state.platform = m.platform || 'OTHER';
+                state.url = m.url || state.url;
+                state.favicon = m.favicon || '';
+
+                if (!state.title) {
+                  state.title = m.title || '';
+                }
+                if (!state.imageUrl) {
+                  state.imageUrl = m.imageUrl || '';
+                }
+              } else if (!state.title) {
+                state.title = tab.title || '';
+              }
+              render();
+            });
+          } catch (sendErr) {
+            console.warn('[IdeaVault] Failed to send message to tab:', sendErr);
+            if (!state.title) state.title = tab.title || '';
+            render();
           }
+        } else {
+          if (!state.title) state.title = tab.title || '';
           render();
         }
       });
     } catch (e) {
-      console.warn('Content script communication error:', e);
+      console.warn('[IdeaVault] tabs.query exception:', e);
+      fallbackActiveTab(pendingSave);
     }
+  } else {
+    fallbackActiveTab(pendingSave);
+  }
+}
 
-    render();
-  });
+function fallbackActiveTab(pendingSave) {
+  if (pendingSave && pendingSave.url) {
+    state.url = pendingSave.url;
+    state.title = pendingSave.title || '';
+    state.imageUrl = pendingSave.imageUrl || '';
+    if (pendingSave.selectionText) {
+      state.description = `"${pendingSave.selectionText}"`;
+    }
+  } else {
+    state.url = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://ideasvault-1-0.vercel.app';
+    state.title = (typeof document !== 'undefined' && document.title) ? document.title : 'IdeaVault';
+  }
+  state.selectedCollection = suggestCollection(state.url);
+  render();
 }
 
 // Handle Login
@@ -216,7 +370,7 @@ async function handleLogin(email, password) {
     state.view = 'save';
     state.isSaving = false;
 
-    chrome.storage.local.set({ user: data.user, session: data.session });
+    await extensionStorage.set({ user: data.user, session: data.session });
     await loadCollections();
     await extractActiveTabMetadata();
   } catch (err) {
@@ -228,8 +382,8 @@ async function handleLogin(email, password) {
 }
 
 // Handle Log Out
-function handleLogout() {
-  chrome.storage.local.remove(['user', 'session']);
+async function handleLogout() {
+  await extensionStorage.remove(['user', 'session']);
   state.user = null;
   state.session = null;
   state.loginEmail = '';
@@ -250,6 +404,10 @@ async function toggleRecording() {
 
 async function startRecording() {
   try {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Microphone access is not available in this environment.');
+      return;
+    }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     state.audioChunks = [];
     state.mediaRecorder = new MediaRecorder(stream);
@@ -369,9 +527,11 @@ async function handleSaveInspiration() {
     state.view = 'success';
     render();
 
-    // Auto-close popup after 1.2 seconds
+    // Auto-close popup after 1.2 seconds if in popup context
     setTimeout(() => {
-      window.close();
+      if (typeof window !== 'undefined' && typeof window.close === 'function') {
+        window.close();
+      }
     }, 1200);
 
   } catch (err) {
@@ -464,22 +624,12 @@ function render() {
     });
 
     document.getElementById('create-account-btn')?.addEventListener('click', () => {
-      const signupUrl = 'https://ideasvault-1-0.vercel.app/signup';
-      if (typeof chrome !== 'undefined' && chrome.tabs) {
-        chrome.tabs.create({ url: signupUrl });
-      } else {
-        window.open(signupUrl, '_blank');
-      }
+      openExternalTab('https://ideasvault-1-0.vercel.app/signup');
     });
 
     document.getElementById('forgot-password-link')?.addEventListener('click', (e) => {
       e.preventDefault();
-      const resetUrl = 'https://ideasvault-1-0.vercel.app';
-      if (typeof chrome !== 'undefined' && chrome.tabs) {
-        chrome.tabs.create({ url: resetUrl });
-      } else {
-        window.open(resetUrl, '_blank');
-      }
+      openExternalTab('https://ideasvault-1-0.vercel.app');
     });
 
     return;
@@ -515,7 +665,7 @@ function render() {
 
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 10px; background: #181920; border: 1px solid #23242B; padding: 3px 8px; border-radius: 12px; color: #A1A1AA; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${state.user?.email || 'Logged In'}
+            ${escapeHtml(state.user?.email || 'Logged In')}
           </span>
           <button id="logout-btn" title="Log Out" style="background: none; border: none; color: #71717A; cursor: pointer; font-size: 13px; padding: 2px;">✕</button>
         </div>
@@ -523,14 +673,14 @@ function render() {
 
       ${state.errorMessage ? `
         <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 8px 12px; border-radius: 8px; font-size: 11px;">
-          ${state.errorMessage}
+          ${escapeHtml(state.errorMessage)}
         </div>
       ` : ''}
 
       <!-- Page Thumbnail & Platform Badge -->
       <div style="display: flex; gap: 12px; background: #111217; border: 1px solid #23242B; padding: 10px; border-radius: 12px; align-items: center;">
         ${state.imageUrl ? `
-          <img src="${state.imageUrl}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #23242B; background: #000;" onError="this.style.display='none'">
+          <img src="${escapeHtml(state.imageUrl)}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #23242B; background: #000;" onError="this.style.display='none'">
         ` : `
           <div style="width: 56px; height: 56px; background: #181920; border-radius: 8px; border: 1px solid #23242B; display: flex; align-items: center; justify-content: center; font-size: 20px;">
             ${platformIcon}
@@ -538,10 +688,10 @@ function render() {
         `}
         <div style="flex: 1; overflow: hidden;">
           <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(79, 140, 255, 0.1); border: 1px solid rgba(79, 140, 255, 0.2); color: #4F8CFF; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 4px;">
-            ${platformIcon} ${state.platform}
+            ${platformIcon} ${escapeHtml(state.platform)}
           </div>
           <p style="font-size: 11px; color: #A1A1AA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            ${state.url}
+            ${escapeHtml(state.url)}
           </p>
         </div>
       </div>
@@ -577,7 +727,7 @@ function render() {
             { name: '💼 LinkedIn' },
             { name: '💡 Random Ideas' }
           ]).map(c => `
-            <option value="${c.name}" ${c.name === state.selectedCollection ? 'selected' : ''}>${c.name}</option>
+            <option value="${escapeHtml(c.name)}" ${c.name === state.selectedCollection ? 'selected' : ''}>${escapeHtml(c.name)}</option>
           `).join('')}
         </select>
       </div>
@@ -612,7 +762,9 @@ function render() {
   });
 
   document.getElementById('cancel-btn')?.addEventListener('click', () => {
-    window.close();
+    if (typeof window !== 'undefined' && typeof window.close === 'function') {
+      window.close();
+    }
   });
 
   document.getElementById('save-btn')?.addEventListener('click', handleSaveInspiration);
@@ -621,7 +773,7 @@ function render() {
 // Helpers
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function formatTime(sec) {
