@@ -594,8 +594,13 @@ async function uploadAndTranscribe(audioBlob, mimeType) {
     if (data && data.transcript) {
       const cleanTranscript = data.transcript.trim();
       
-      // Separate Voice Transcript field (DO NOT overwrite or append to Description)
-      state.voiceTranscript = cleanTranscript;
+      if (cleanTranscript) {
+        if (state.description && state.description.trim()) {
+          state.description = `${state.description.trim()}\n\n${cleanTranscript}`;
+        } else {
+          state.description = cleanTranscript;
+        }
+      }
 
       // Auto fill Title if currently empty
       if (!state.title || !state.title.trim()) {
@@ -695,7 +700,7 @@ async function handleSaveInspiration() {
       url: state.url.trim() || '',
       platform: state.platform || 'OTHER',
       voice_url: null,
-      voice_transcript: state.voiceTranscript || null,
+      voice_transcript: null,
       ai_status: 'ready',
       ai_summary: JSON.stringify(initialAiSummary),
       ai_tags: ['Aesthetics', 'SaaS Layout'],
@@ -844,7 +849,7 @@ function render() {
   const platformIcon = PLATFORM_ICONS[state.platform] || '🌐';
 
   // Determine Voice Button Label and Style
-  let voiceBtnLabel = '🎙️ Start Recording';
+  let voiceBtnLabel = '🎙️ Record Voice';
   let voiceBtnBg = '#181920';
   let voiceBtnColor = '#A1A1AA';
   let voiceBtnBorder = '#23242B';
@@ -857,19 +862,13 @@ function render() {
     voiceBtnColor = '#FCA5A5';
     voiceBtnBorder = 'rgba(239, 68, 68, 0.4)';
   } else if (state.isRecording) {
-    voiceBtnLabel = `⏹️ Stop Recording (${formatTime(state.recordSeconds)})`;
+    voiceBtnLabel = `🔴 Recording... (${formatTime(state.recordSeconds)})`;
     voiceBtnBg = '#EF4444';
     voiceBtnColor = '#FFFFFF';
     voiceBtnBorder = '#EF4444';
     voiceBtnClass = 'recording-pulse';
-  } else if (state.isUploading) {
-    voiceBtnLabel = '⏳ Uploading...';
-    voiceBtnBg = '#181920';
-    voiceBtnColor = '#4F8CFF';
-    voiceBtnBorder = '#4F8CFF';
-    voiceBtnDisabled = true;
-  } else if (state.isTranscribing) {
-    voiceBtnLabel = '✨ Transcribing...';
+  } else if (state.isUploading || state.isTranscribing) {
+    voiceBtnLabel = '⏳ Transcribing...';
     voiceBtnBg = '#181920';
     voiceBtnColor = '#8B5CF6';
     voiceBtnBorder = '#8B5CF6';
@@ -928,33 +927,13 @@ function render() {
         <input type="text" id="inp-title" value="${escapeHtml(state.title)}" placeholder="Enter a descriptive title..." style="font-weight: 600;">
       </div>
 
-      <!-- Description Input -->
+      <!-- Description Input & Voice Button -->
       <div>
         <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; display: block; margin-bottom: 3px; letter-spacing: 0.5px;">DESCRIPTION</label>
-        <textarea id="inp-desc" placeholder="Write your notes here..." style="min-height: 52px;">${escapeHtml(state.description)}</textarea>
-      </div>
+        <textarea id="inp-desc" placeholder="Write your notes here..." style="min-height: 64px;">${escapeHtml(state.description)}</textarea>
 
-      <!-- Voice Transcript Section (Placed directly BELOW Description) -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; letter-spacing: 0.5px;">VOICE TRANSCRIPT</label>
-          ${state.voiceTranscript ? `
-            <button id="clear-voice-btn" style="background: none; border: none; color: #71717A; font-size: 10px; cursor: pointer; text-decoration: underline;">Clear</button>
-          ` : ''}
-        </div>
-
-        <!-- Read-only transcript box -->
-        <div style="background-color: #09090B; border: 1px solid #23242B; border-radius: 8px; padding: 8px 10px; min-height: 48px; max-height: 72px; overflow-y: auto; font-size: 12px; color: ${state.voiceTranscript ? '#E4E4E7' : '#52525B'}; line-height: 1.4;">
-          ${state.voiceTranscript ? escapeHtml(state.voiceTranscript) : (
-            state.isRecording ? '🎙️ Listening to your voice...' :
-            state.isUploading ? '⏳ Processing audio file...' :
-            state.isTranscribing ? '✨ Converting speech to text...' :
-            'Recorded voice transcript will appear here...'
-          )}
-        </div>
-
-        <!-- Record / Grant Mic Action Button -->
-        <button id="voice-btn" class="${voiceBtnClass}" ${voiceBtnDisabled ? 'disabled' : ''} style="margin-top: 2px; width: 100%; height: 34px; background: ${voiceBtnBg}; color: ${voiceBtnColor}; border: 1px solid ${voiceBtnBorder}; font-size: 11px; font-weight: 600; border-radius: 8px; cursor: ${voiceBtnDisabled ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+        <!-- Record / Grant Mic Action Button Directly Below Textarea -->
+        <button id="voice-btn" class="${voiceBtnClass}" ${voiceBtnDisabled ? 'disabled' : ''} style="margin-top: 6px; width: 100%; height: 36px; background: ${voiceBtnBg}; color: ${voiceBtnColor}; border: 1px solid ${voiceBtnBorder}; font-size: 11px; font-weight: 600; border-radius: 8px; cursor: ${voiceBtnDisabled ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
           <span>${escapeHtml(voiceBtnLabel)}</span>
         </button>
       </div>
@@ -986,11 +965,6 @@ function render() {
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('voice-btn')?.addEventListener('click', toggleRecording);
   document.getElementById('grant-mic-btn')?.addEventListener('click', requestMicPermission);
-  
-  document.getElementById('clear-voice-btn')?.addEventListener('click', () => {
-    state.voiceTranscript = '';
-    render();
-  });
 
   document.getElementById('inp-title')?.addEventListener('input', (e) => {
     state.title = e.target.value;
