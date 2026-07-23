@@ -11,6 +11,8 @@
     "tabs"
   ],
   "host_permissions": [
+    "https://ideasvault-1-0.vercel.app/*",
+    "https://*.supabase.co/*",
     "<all_urls>"
   ],
   "action": {

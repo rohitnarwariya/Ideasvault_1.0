@@ -1,8 +1,53 @@
 // IdeaVault Chrome Extension Popup Application Script
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.origin.includes('http') 
-  ? window.location.origin 
-  : 'http://localhost:3000';
+const API_BASE_URL = 'https://ideasvault-1-0.vercel.app';
+
+// Enhanced Network Request Logging & Helper
+async function apiFetch(endpoint, options = {}) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const method = options.method || 'GET';
+  
+  console.log(`[IdeaVault Request] ${method} ${url}`, options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : '');
+
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+  } catch (err) {
+    const errorMsg = `Unable to connect to ${url}. ${err?.message || 'Network error / Failed to fetch'}`;
+    console.error(`[IdeaVault Network Error] ${method} ${url}:`, err, errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  let data = {};
+  try {
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { rawText: text };
+    }
+  } catch (readErr) {
+    console.warn(`[IdeaVault Read Error] ${method} ${url}:`, readErr);
+  }
+
+  console.log(`[IdeaVault Response] ${method} ${url} Status: ${res.status}`, data);
+
+  if (!res.ok || (data && data.success === false)) {
+    const serverErr = data?.error || data?.message || (typeof data?.rawText === 'string' ? data.rawText.slice(0, 100) : `HTTP ${res.status} ${res.statusText}`);
+    const finalErr = `Server returned status ${res.status}: ${serverErr}`;
+    console.error(`[IdeaVault API Error] ${method} ${url} (${res.status}):`, serverErr);
+    throw new Error(serverErr || finalErr);
+  }
+
+  return data;
+}
 
 // State Management
 let state = {
@@ -83,13 +128,12 @@ async function checkAuthAndLoadData() {
 async function loadCollections() {
   try {
     const userId = state.user?.id || 'demo-user';
-    const res = await fetch(`${API_BASE_URL}/api/extension/collections?userId=${userId}`);
-    const data = await res.json();
+    const data = await apiFetch(`/api/extension/collections?userId=${encodeURIComponent(userId)}`);
     if (data.success && Array.isArray(data.collections)) {
       state.collections = data.collections;
     }
   } catch (err) {
-    console.warn('Failed to load collections from server, using default list:', err);
+    console.warn('[IdeaVault] Failed to load collections from server, using default list:', err);
     state.collections = [
       { id: '1', name: '📹 YouTube' },
       { id: '2', name: '📸 Instagram' },
@@ -156,14 +200,12 @@ async function handleLogin(email, password) {
   render();
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/extension/auth`, {
+    const data = await apiFetch('/api/extension/auth', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
+    if (!data.success || !data.user) {
       throw new Error(data.error || 'Login failed. Please check your credentials.');
     }
 
@@ -176,6 +218,7 @@ async function handleLogin(email, password) {
     await loadCollections();
     await extractActiveTabMetadata();
   } catch (err) {
+    console.error('[IdeaVault Login Error]:', err);
     state.errorMessage = err.message || 'Login failed';
     state.isSaving = false;
   }
@@ -281,34 +324,35 @@ async function transcribeAudio(audioBlob) {
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
     reader.onloadend = async () => {
-      const base64Audio = reader.result.split(',')[1];
-      const res = await fetch(`${API_BASE_URL}/api/transcribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioData: base64Audio, mimeType: 'audio/webm' })
-      });
+      try {
+        const base64Audio = reader.result.split(',')[1];
+        const data = await apiFetch('/api/transcribe', {
+          method: 'POST',
+          body: JSON.stringify({ audioData: base64Audio, mimeType: 'audio/webm' })
+        });
 
-      const data = await res.json();
-      state.isTranscribing = false;
+        state.isTranscribing = false;
 
-      if (data.transcript) {
-        // Append or set Description
-        const cleanTranscript = data.transcript.trim();
-        state.voiceTranscript = cleanTranscript;
-        state.description = state.description 
-          ? `${state.description}\n\n[Voice Memo]: "${cleanTranscript}"`
-          : cleanTranscript;
+        if (data.transcript) {
+          const cleanTranscript = data.transcript.trim();
+          state.voiceTranscript = cleanTranscript;
+          state.description = state.description 
+            ? `${state.description}\n\n[Voice Memo]: "${cleanTranscript}"`
+            : cleanTranscript;
 
-        // Rule: If Title is empty, auto-generate 3-6 word title from transcript
-        // If Title already exists, NEVER overwrite it.
-        if (!state.title.trim() && data.title) {
-          state.title = data.title;
+          if (!state.title.trim() && data.title) {
+            state.title = data.title;
+          }
         }
+      } catch (err) {
+        console.error('[IdeaVault Transcription Error]:', err);
+        state.isTranscribing = false;
+        state.errorMessage = err.message || 'Voice transcription failed';
       }
       render();
     };
   } catch (err) {
-    console.error('Transcription error:', err);
+    console.error('Transcription reader error:', err);
     state.isTranscribing = false;
     render();
   }
@@ -332,14 +376,12 @@ async function handleSaveInspiration() {
       userId: state.user?.id || 'demo-user'
     };
 
-    const res = await fetch(`${API_BASE_URL}/api/extension/save`, {
+    const data = await apiFetch('/api/extension/save', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
+    if (!data.success) {
       throw new Error(data.error || 'Failed to save inspiration.');
     }
 
@@ -348,13 +390,13 @@ async function handleSaveInspiration() {
     state.view = 'success';
     render();
 
-    // Auto-close popup after 1 second
+    // Auto-close popup after 1.2 seconds
     setTimeout(() => {
       window.close();
     }, 1200);
 
   } catch (err) {
-    console.error('Save error:', err);
+    console.error('[IdeaVault Save Error]:', err);
     state.errorMessage = err.message || 'Failed to save.';
     state.isSaving = false;
     render();
