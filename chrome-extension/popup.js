@@ -70,7 +70,9 @@ let state = {
   audioChunks: [],
   isTranscribing: false,
   isSaving: false,
-  errorMessage: ''
+  errorMessage: '',
+  loginEmail: '',
+  loginPassword: ''
 };
 
 // Platform Icons Map
@@ -225,37 +227,14 @@ async function handleLogin(email, password) {
   render();
 }
 
-// Handle Auto-Sync with web app
-async function handleAutoSync() {
-  state.errorMessage = '';
-  state.isSaving = true;
-  render();
-
-  // Create demo/synced session
-  const syncedUser = {
-    id: 'demo-user',
-    name: 'IdeaVault Creator',
-    email: 'creator@ideavault.app',
-    avatar: ''
-  };
-  const syncedSession = { access_token: 'synced-token-123' };
-
-  state.user = syncedUser;
-  state.session = syncedSession;
-  state.view = 'save';
-  state.isSaving = false;
-
-  chrome.storage.local.set({ user: syncedUser, session: syncedSession });
-  await loadCollections();
-  await extractActiveTabMetadata();
-  render();
-}
-
 // Handle Log Out
 function handleLogout() {
   chrome.storage.local.remove(['user', 'session']);
   state.user = null;
   state.session = null;
+  state.loginEmail = '';
+  state.loginPassword = '';
+  state.errorMessage = '';
   state.view = 'login';
   render();
 }
@@ -431,48 +410,76 @@ function render() {
         </div>
 
         ${state.errorMessage ? `
-          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 10px; border-radius: 8px; font-size: 12px;">
-            ${state.errorMessage}
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 10px; border-radius: 8px; font-size: 12px; line-height: 1.4;">
+            ${escapeHtml(state.errorMessage)}
           </div>
         ` : ''}
 
-        <form id="login-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <form id="login-form" style="display: flex; flex-direction: column; gap: 14px;">
           <div>
             <label style="font-size: 11px; font-weight: 600; color: #A1A1AA; display: block; margin-bottom: 4px;">EMAIL</label>
-            <input type="email" id="email" placeholder="creator@example.com" required value="creator@ideavault.app">
+            <input type="email" id="email" placeholder="you@example.com" required value="${escapeHtml(state.loginEmail || '')}">
           </div>
 
           <div>
-            <label style="font-size: 11px; font-weight: 600; color: #A1A1AA; display: block; margin-bottom: 4px;">PASSWORD</label>
-            <input type="password" id="password" placeholder="••••••••" required value="password123">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="font-size: 11px; font-weight: 600; color: #A1A1AA;">PASSWORD</label>
+              <a id="forgot-password-link" href="#" style="font-size: 11px; color: #4F8CFF; text-decoration: none; font-weight: 500;">Forgot Password?</a>
+            </div>
+            <input type="password" id="password" placeholder="••••••••" required value="${escapeHtml(state.loginPassword || '')}">
           </div>
 
           <button type="submit" class="btn-primary" style="margin-top: 4px; height: 40px;" ${state.isSaving ? 'disabled' : ''}>
-            ${state.isSaving ? 'Logging in...' : 'Sign In to Account'}
+            ${state.isSaving ? 'Signing In...' : 'Sign In to Account'}
+          </button>
+
+          <button type="button" id="create-account-btn" class="btn-secondary" style="height: 38px;">
+            Create Account
           </button>
         </form>
-
-        <div style="display: flex; align-items: center; gap: 10px; margin: 4px 0;">
-          <div style="flex: 1; height: 1px; background: #23242B;"></div>
-          <span style="font-size: 10px; color: #71717A; text-transform: uppercase;">OR</span>
-          <div style="flex: 1; height: 1px; background: #23242B;"></div>
-        </div>
-
-        <button id="sync-btn" class="btn-secondary" style="height: 38px;">
-          ⚡ Auto-Sync Web App Session
-        </button>
       </div>
     `;
 
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+
+    emailEl?.addEventListener('input', (e) => {
+      state.loginEmail = e.target.value;
+    });
+
+    passwordEl?.addEventListener('input', (e) => {
+      state.loginPassword = e.target.value;
+    });
+
     document.getElementById('login-form')?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+      const email = document.getElementById('email')?.value?.trim() || '';
+      const password = document.getElementById('password')?.value || '';
+      if (!email || !password) {
+        state.errorMessage = 'Please enter both email and password';
+        render();
+        return;
+      }
       handleLogin(email, password);
     });
 
-    document.getElementById('sync-btn')?.addEventListener('click', () => {
-      handleAutoSync();
+    document.getElementById('create-account-btn')?.addEventListener('click', () => {
+      const signupUrl = 'https://ideasvault-1-0.vercel.app/signup';
+      if (typeof chrome !== 'undefined' && chrome.tabs) {
+        chrome.tabs.create({ url: signupUrl });
+      } else {
+        window.open(signupUrl, '_blank');
+      }
+    });
+
+    document.getElementById('forgot-password-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      const resetUrl = 'https://ideasvault-1-0.vercel.app';
+      if (typeof chrome !== 'undefined' && chrome.tabs) {
+        chrome.tabs.create({ url: resetUrl });
+      } else {
+        window.open(resetUrl, '_blank');
+      }
     });
 
     return;
