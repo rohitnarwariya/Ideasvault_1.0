@@ -143,11 +143,12 @@ let state = {
   imageUrl: '',
   favicon: '',
   isRecording: false,
+  isUploading: false,
+  isTranscribing: false,
   recordSeconds: 0,
   recordTimer: null,
   mediaRecorder: null,
   audioChunks: [],
-  isTranscribing: false,
   isSaving: false,
   errorMessage: '',
   loginEmail: '',
@@ -181,6 +182,17 @@ function suggestCollection(urlStr) {
   if (lower.includes('linkedin.com')) return '💼 LinkedIn';
   if (lower.includes('github.com')) return '🐙 GitHub';
   return '💡 Random Ideas';
+}
+
+// Preserve field inputs in state prior to re-renders
+function syncInputsToState() {
+  const titleEl = document.getElementById('inp-title');
+  const descEl = document.getElementById('inp-desc');
+  const colEl = document.getElementById('inp-collection');
+
+  if (titleEl) state.title = titleEl.value;
+  if (descEl) state.description = descEl.value;
+  if (colEl) state.selectedCollection = colEl.value;
 }
 
 // Initialize Popup safely
@@ -388,110 +400,195 @@ async function handleLogout() {
 
 // Voice Recording Handlers
 async function toggleRecording() {
+  syncInputsToState();
   if (state.isRecording) {
     stopRecording();
-  } else {
+  } else if (!state.isUploading && !state.isTranscribing) {
     await startRecording();
   }
 }
 
 async function startRecording() {
+  state.errorMessage = '';
+  
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    state.errorMessage = 'Microphone access is not supported in this environment.';
+    render();
+    return;
+  }
+
   try {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Microphone access is not available in this environment.');
-      return;
-    }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     state.audioChunks = [];
-    state.mediaRecorder = new MediaRecorder(stream);
+
+    let options = {};
+    if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        options = { mimeType: 'audio/webm;codecs=opus' };
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' };
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/mp4' };
+      }
+    }
+
+    state.mediaRecorder = new MediaRecorder(stream, options);
 
     state.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
+      if (event.data && event.data.size > 0) {
         state.audioChunks.push(event.data);
       }
     };
 
     state.mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(state.audioChunks, { type: 'audio/webm' });
-      stream.getTracks().forEach(track => track.stop());
-      await transcribeAudio(audioBlob);
+      try {
+        stream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
+
+      if (!state.audioChunks || state.audioChunks.length === 0) {
+        state.isUploading = false;
+        state.isTranscribing = false;
+        state.errorMessage = 'No audio recorded. Please speak into the microphone.';
+        render();
+        return;
+      }
+
+      const mimeType = state.mediaRecorder.mimeType || 'audio/webm';
+      const audioBlob = new Blob(state.audioChunks, { type: mimeType });
+
+      await uploadAndTranscribe(audioBlob, mimeType);
     };
 
     state.mediaRecorder.start(100);
     state.isRecording = true;
     state.recordSeconds = 0;
 
+    if (state.recordTimer) clearInterval(state.recordTimer);
     state.recordTimer = setInterval(() => {
       state.recordSeconds += 1;
+      syncInputsToState();
       render();
     }, 1000);
 
     render();
   } catch (err) {
-    console.error('Microphone access error:', err);
-    alert('Microphone access is required to record voice notes.');
-  }
-}
-
-function stopRecording() {
-  if (state.mediaRecorder && state.isRecording) {
-    state.mediaRecorder.stop();
+    console.error('[IdeaVault Mic Error]:', err);
     state.isRecording = false;
-    if (state.recordTimer) {
-      clearInterval(state.recordTimer);
-      state.recordTimer = null;
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      state.errorMessage = 'Microphone permission denied. Please allow microphone access.';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      state.errorMessage = 'No microphone found on your device.';
+    } else {
+      state.errorMessage = err.message || 'Failed to start recording.';
     }
     render();
   }
 }
 
-// Transcribe Audio
-async function transcribeAudio(audioBlob) {
-  state.isTranscribing = true;
+function stopRecording() {
+  syncInputsToState();
+  if (state.mediaRecorder && state.isRecording) {
+    if (state.recordTimer) {
+      clearInterval(state.recordTimer);
+      state.recordTimer = null;
+    }
+    state.isRecording = false;
+    state.isUploading = true;
+    render();
+
+    try {
+      state.mediaRecorder.stop();
+    } catch (err) {
+      console.error('[IdeaVault stopRecorder Error]:', err);
+      state.isUploading = false;
+      state.errorMessage = 'Error stopping audio recorder: ' + (err.message || err);
+      render();
+    }
+  }
+}
+
+// Transcribe Audio using website backend /api/transcribe
+async function uploadAndTranscribe(audioBlob, mimeType) {
+  state.isUploading = true;
+  state.isTranscribing = false;
+  state.errorMessage = '';
   render();
 
   try {
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
-    reader.onloadend = async () => {
-      try {
-        const base64Audio = reader.result.split(',')[1];
-        const res = await fetch(`${WEB_APP_URL}/api/transcribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioData: base64Audio, mimeType: 'audio/webm' })
-        });
 
-        const data = await res.json();
-        state.isTranscribing = false;
+    await new Promise((resolve, reject) => {
+      reader.onloadend = resolve;
+      reader.onerror = () => reject(new Error('Failed to process recorded audio.'));
+    });
 
-        if (data.transcript) {
-          const cleanTranscript = data.transcript.trim();
-          state.voiceTranscript = cleanTranscript;
-          state.description = state.description 
-            ? `${state.description}\n\n[Voice Memo]: "${cleanTranscript}"`
-            : cleanTranscript;
+    const base64Audio = reader.result ? reader.result.split(',')[1] : null;
+    if (!base64Audio) {
+      throw new Error('Audio conversion failed.');
+    }
 
-          if (!state.title.trim() && data.title) {
-            state.title = data.title;
-          }
-        }
-      } catch (err) {
-        console.error('[IdeaVault Transcription Error]:', err);
-        state.isTranscribing = false;
-        state.errorMessage = err.message || 'Voice transcription failed';
-      }
-      render();
-    };
-  } catch (err) {
-    console.error('Transcription reader error:', err);
-    state.isTranscribing = false;
+    state.isUploading = false;
+    state.isTranscribing = true;
     render();
+
+    const targetApiUrl = (typeof window !== 'undefined' && window.location.origin.startsWith('http') && !window.location.origin.includes('chrome-extension'))
+      ? '/api/transcribe'
+      : `${WEB_APP_URL}/api/transcribe`;
+
+    const res = await fetch(targetApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audioData: base64Audio,
+        mimeType: mimeType || 'audio/webm'
+      })
+    });
+
+    if (!res.ok) {
+      let errText = 'Transcription service error.';
+      try {
+        const errJson = await res.json();
+        if (errJson.error) errText = errJson.error;
+      } catch (e) {}
+      throw new Error(errText);
+    }
+
+    const data = await res.json();
+    state.isTranscribing = false;
+
+    if (data && data.transcript) {
+      const cleanTranscript = data.transcript.trim();
+      state.voiceTranscript = cleanTranscript;
+
+      if (cleanTranscript) {
+        state.description = state.description 
+          ? `${state.description}\n\n[Voice Memo]: "${cleanTranscript}"`
+          : cleanTranscript;
+      }
+
+      if (!state.title || !state.title.trim()) {
+        if (data.title && data.title.trim()) {
+          state.title = data.title.trim();
+        }
+      }
+    } else {
+      state.errorMessage = 'No spoken text was detected in the audio.';
+    }
+
+  } catch (err) {
+    console.error('[IdeaVault Transcription Error]:', err);
+    state.isUploading = false;
+    state.isTranscribing = false;
+    state.errorMessage = err.message || 'Transcription failed due to a network or server error.';
   }
+
+  render();
 }
 
 // Save Inspiration directly to Supabase 'ideas' table
 async function handleSaveInspiration() {
+  syncInputsToState();
   state.isSaving = true;
   state.errorMessage = '';
   render();
@@ -715,6 +812,37 @@ function render() {
   // Save View
   const platformIcon = PLATFORM_ICONS[state.platform] || '🌐';
 
+  let voiceBtnLabel = 'Voice Note';
+  let voiceBtnIcon = '🎙️';
+  let voiceBtnBg = '#181920';
+  let voiceBtnColor = '#A1A1AA';
+  let voiceBtnBorder = '#23242B';
+  let voiceBtnClass = '';
+  let voiceBtnDisabled = false;
+
+  if (state.isRecording) {
+    voiceBtnLabel = `Stop Recording (${formatTime(state.recordSeconds)})`;
+    voiceBtnIcon = '⏹️';
+    voiceBtnBg = '#EF4444';
+    voiceBtnColor = '#FFFFFF';
+    voiceBtnBorder = '#EF4444';
+    voiceBtnClass = 'recording-pulse';
+  } else if (state.isUploading) {
+    voiceBtnLabel = 'Uploading...';
+    voiceBtnIcon = '⏳';
+    voiceBtnBg = '#181920';
+    voiceBtnColor = '#4F8CFF';
+    voiceBtnBorder = '#4F8CFF';
+    voiceBtnDisabled = true;
+  } else if (state.isTranscribing) {
+    voiceBtnLabel = 'Transcribing...';
+    voiceBtnIcon = '✨';
+    voiceBtnBg = '#181920';
+    voiceBtnColor = '#8B5CF6';
+    voiceBtnBorder = '#8B5CF6';
+    voiceBtnDisabled = true;
+  }
+
   container.innerHTML = `
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 520px; justify-content: space-between;">
       
@@ -768,9 +896,9 @@ function render() {
       <div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
           <label style="font-size: 10px; font-weight: 700; color: #A1A1AA; letter-spacing: 0.5px;">DESCRIPTION</label>
-          <button id="voice-btn" class="${state.isRecording ? 'recording-pulse' : ''}" style="background: ${state.isRecording ? '#EF4444' : '#181920'}; color: ${state.isRecording ? '#FFFFFF' : '#A1A1AA'}; border: 1px solid ${state.isRecording ? '#EF4444' : '#23242B'}; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-            <span>🎙️</span>
-            <span>${state.isRecording ? `Recording (${formatTime(state.recordSeconds)})` : state.isTranscribing ? 'Transcribing...' : 'Voice Note'}</span>
+          <button id="voice-btn" class="${voiceBtnClass}" ${voiceBtnDisabled ? 'disabled' : ''} style="background: ${voiceBtnBg}; color: ${voiceBtnColor}; border: 1px solid ${voiceBtnBorder}; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; cursor: ${voiceBtnDisabled ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+            <span>${voiceBtnIcon}</span>
+            <span>${escapeHtml(voiceBtnLabel)}</span>
           </button>
         </div>
         <textarea id="inp-desc" placeholder="Write why you saved this inspiration..." style="min-height: 64px;">${escapeHtml(state.description)}</textarea>
