@@ -444,6 +444,9 @@ async function startRecording() {
   state.errorMessage = '';
   state.micPermissionDenied = false;
   
+  console.log("navigator.mediaDevices", navigator.mediaDevices);
+  console.log("getUserMedia", navigator.mediaDevices?.getUserMedia);
+
   if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     state.errorMessage = 'Microphone access is not supported in this environment.';
     render();
@@ -505,7 +508,11 @@ async function startRecording() {
 
     render();
   } catch (err) {
-    console.error('[IdeaVault Mic Error]:', err);
+    console.error("[IdeaVault Mic Error]", {
+      name: err?.name,
+      message: err?.message,
+      stack: err?.stack
+    });
     state.isRecording = false;
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.includes('Permission denied')) {
       state.micPermissionDenied = true;
