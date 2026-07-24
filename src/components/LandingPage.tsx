@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { 
   Lock, Play, ArrowRight, Sparkles, Chrome, Mic, Search, Layers, Compass, HelpCircle, 
-  ChevronDown, ChevronUp, Star, Check, Link, Pencil, Folder
+  ChevronDown, ChevronUp, Star, Check, Link, Pencil, Folder, CheckCircle2
 } from "lucide-react";
-import ExtensionModal from "./ExtensionModal";
 
 interface LandingPageProps {
   onStart: () => void;
@@ -194,7 +193,6 @@ function FloatingCard({ platform, stats, notes, className, yRange, duration }: F
 
 export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [showExtensionModal, setShowExtensionModal] = useState(false);
 
   const faqs = [
     {
@@ -236,9 +234,16 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
           <nav className="hidden md:flex items-center gap-8 text-[11px] font-bold tracking-widest uppercase text-brand-muted">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-            <button onClick={() => setShowExtensionModal(true)} className="hover:text-[#4F8CFF] transition-colors flex items-center gap-1">
+            <a 
+              href="#extension" 
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('extension')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hover:text-[#4F8CFF] transition-colors flex items-center gap-1 cursor-pointer"
+            >
               <Chrome className="w-3.5 h-3.5 text-[#4F8CFF]" /> Extension
-            </button>
+            </a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
@@ -619,80 +624,272 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
       </section>
 
       {/* Chrome Extension Spotlight Section */}
-      <section id="extension" className="bg-gradient-to-b from-[#09090B] via-[#111217]/20 to-[#09090B] border-t border-b border-[#23242B] py-24 relative z-10">
-        <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#23242B] bg-[#111217] text-[#4F8CFF] text-[9px] font-bold tracking-[0.2em] mb-6 uppercase">
-              <Chrome className="w-3.5 h-3.5" /> CHROME EXTENSION
+      <section id="extension" className="bg-gradient-to-b from-[#09090B] via-[#111217]/50 to-[#09090B] border-t border-b border-[#23242B] py-20 relative z-10">
+        <div className="max-w-6xl mx-auto px-6">
+          
+          {/* SECTION TITLE */}
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#23242B] bg-[#111217] text-[#4F8CFF] text-[10px] font-bold tracking-[0.2em] mb-4 uppercase">
+              ⚡ CHROME EXTENSION
             </div>
-            <h2 className="font-display font-normal text-3xl md:text-[80px] uppercase tracking-tight leading-none text-white mb-6">
-              SAVE ON THE FLY, NO TABS REQUIRED
+            <h2 className="font-display font-normal text-3xl sm:text-4xl md:text-5xl uppercase tracking-tight text-white mb-4">
+              Capture Inspiration From Anywhere
             </h2>
-            <p className="text-brand-muted text-sm font-sans font-medium leading-relaxed mb-8">
-              Keep your creative focus unbroken. Save references directly as you browse Pinterest, Instagram, YouTube, or articles.
+            <p className="text-brand-muted text-sm sm:text-base font-sans font-medium leading-relaxed">
+              The IdeaVault Chrome Extension lets you save ideas directly from your browser without interrupting your workflow. Whether you're watching YouTube, scrolling Instagram, browsing Pinterest, reading blogs, or exploring X, you can capture the idea instantly with one click.
             </p>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center mt-0.5">
-                  <Check className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">Instant Cloud Sync</h4>
-                  <p className="text-[11px] text-brand-muted font-medium">Syncs immediately across all your devices</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center mt-0.5">
-                  <Check className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">Full Context Capture</h4>
-                  <p className="text-[11px] text-brand-muted font-medium">Captures links, thumbnails, and your personal notes</p>
-                </div>
-              </div>
-            </div>
-            <button 
-              onClick={onStart}
-              className="mt-10 px-6 py-3 bg-[#111217] border border-[#23242B] text-white font-bold rounded-xl hover:bg-[#1a1b22] active:scale-95 text-xs font-mono tracking-wider flex items-center gap-2 transition-all cursor-pointer"
-            >
-              GET CHROME EXTENSION <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
 
-          <div className="bg-[#09090B] p-8 rounded-2xl border border-[#23242B] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-2xl" />
+          {/* LEFT SIDE (Browser + Extension Popup UI) & RIGHT SIDE (Vertical Flow) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
             
-            <div className="border border-[#23242B] bg-[#111217] p-5 rounded-xl shadow-lg relative z-10">
-              <div className="flex items-center justify-between border-b border-[#23242B] pb-3 mb-4">
-                <span className="text-xs font-mono font-bold text-white flex items-center gap-2 uppercase">
-                  <Lock className="w-3.5 h-3.5 text-brand-primary" /> IdeaVault Clipper
-                </span>
-                <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+            {/* LEFT SIDE: Realistic Chrome Browser with Popup Open */}
+            <div className="lg:col-span-6 relative">
+              <div className="bg-[#111217] border border-[#23242B] rounded-2xl shadow-2xl overflow-hidden group">
+                {/* Chrome Toolbar / Address Bar */}
+                <div className="bg-[#181920] border-b border-[#23242B] px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="w-3 h-3 rounded-full bg-[#FF5F56] inline-block" />
+                    <span className="w-3 h-3 rounded-full bg-[#FFBD2E] inline-block" />
+                    <span className="w-3 h-3 rounded-full bg-[#27C93F] inline-block" />
+                  </div>
+                  {/* Address Bar */}
+                  <div className="flex-1 bg-[#09090B] border border-[#23242B] rounded-lg px-3 py-1.5 flex items-center justify-between gap-2 overflow-hidden">
+                    <div className="flex items-center gap-2 text-xs text-[#A1A1AA] font-mono truncate">
+                      <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="truncate">https://instagram.com/reel/C3x9K2pM...</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">100%</span>
+                  </div>
+                  {/* Extension Icon in Browser Bar */}
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#4F8CFF] to-[#8B5CF6] flex items-center justify-center text-white shrink-0 shadow-md shadow-[#4F8CFF]/20 ring-2 ring-[#4F8CFF]/50">
+                    <Chrome className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Browser Content Area showing website background with popup layered over it */}
+                <div className="p-4 sm:p-6 bg-[#09090B] relative min-h-[460px] flex items-center justify-center">
+                  {/* Subtle underlying background webpage preview */}
+                  <div className="absolute inset-4 rounded-xl border border-[#23242B]/50 bg-[#111217]/40 backdrop-blur-sm p-4 filter blur-[1px] opacity-30 pointer-events-none select-none flex flex-col justify-between">
+                    <div className="h-32 bg-[#23242B]/40 rounded-lg w-full mb-3" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-[#23242B]/60 rounded w-3/4" />
+                      <div className="h-3 bg-[#23242B]/40 rounded w-1/2" />
+                    </div>
+                  </div>
+
+                  {/* IdeaVault Extension Popup Window Mockup */}
+                  <div className="relative z-10 w-full max-w-[340px] bg-[#111217] border border-[#23242B] rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+                    {/* Top Bar */}
+                    <div className="flex items-center justify-between border-b border-[#23242B] pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#4F8CFF] to-[#8B5CF6] flex items-center justify-center text-xs">
+                          💡
+                        </div>
+                        <span className="font-bold text-xs text-white">Save Inspiration</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] bg-[#181920] border border-[#23242B] px-2 py-0.5 rounded-full text-[#A1A1AA]">
+                          creator@ideavault.io
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Website Thumbnail & Platform Badge */}
+                    <div className="flex gap-2.5 bg-[#09090B] border border-[#23242B] p-2 rounded-xl items-center">
+                      <img 
+                        referrerPolicy="no-referrer"
+                        src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=120&q=80" 
+                        alt="thumbnail" 
+                        className="w-12 h-12 object-cover rounded-lg border border-[#23242B] bg-black shrink-0"
+                      />
+                      <div className="flex-1 overflow-hidden text-left">
+                        <span className="inline-flex items-center gap-1 bg-[#E1306C]/10 border border-[#E1306C]/20 text-[#E1306C] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                          📸 INSTAGRAM
+                        </span>
+                        <p className="text-[10px] text-[#A1A1AA] truncate mt-0.5 font-mono">
+                          https://instagram.com/reel...
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Title Input */}
+                    <div className="text-left">
+                      <label className="text-[9px] font-bold text-[#A1A1AA] block mb-1 tracking-wider uppercase">TITLE</label>
+                      <div className="bg-[#09090B] border border-[#23242B] rounded-lg px-2.5 py-1.5 text-xs text-white font-semibold truncate">
+                        Cinematic Storytelling Transitions
+                      </div>
+                    </div>
+
+                    {/* Description Input */}
+                    <div className="text-left">
+                      <label className="text-[9px] font-bold text-[#A1A1AA] block mb-1 tracking-wider uppercase">DESCRIPTION</label>
+                      <div className="bg-[#09090B] border border-[#23242B] rounded-lg p-2 text-[11px] text-[#A1A1AA] leading-relaxed min-h-[50px]">
+                        I love how the creator builds suspense before every reveal. The camera movement and smooth transitions would work perfectly for my next travel reel.
+                      </div>
+                      {/* Voice Note Button Directly Below Textarea */}
+                      <button className="mt-1.5 w-full py-1.5 bg-[#181920] border border-[#23242B] text-[#A1A1AA] hover:text-white text-[11px] font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                        <Mic className="w-3 h-3 text-[#8B5CF6]" /> Record Voice
+                      </button>
+                    </div>
+
+                    {/* Collection Selector */}
+                    <div className="text-left">
+                      <label className="text-[9px] font-bold text-[#A1A1AA] block mb-1 tracking-wider uppercase">COLLECTION</label>
+                      <div className="bg-[#09090B] border border-[#23242B] rounded-lg px-2.5 py-1.5 text-xs text-white font-medium flex items-center justify-between">
+                        <span>📸 Instagram Storytelling Ideas</span>
+                        <ChevronDown className="w-3 h-3 text-[#A1A1AA]" />
+                      </div>
+                    </div>
+
+                    {/* Save Inspiration Button */}
+                    <button className="w-full py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-bold text-xs rounded-xl shadow-lg shadow-[#4F8CFF]/20 hover:opacity-95 transition-all flex items-center justify-center gap-1.5 mt-1">
+                      <Sparkles className="w-3.5 h-3.5" /> Save Inspiration
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-brand-muted font-bold">Inspiration Link</label>
-                  <div className="bg-[#09090B] px-3 py-2 rounded border border-[#23242B] text-xs text-brand-muted truncate font-mono mt-1">
-                    https://youtube.com/watch?v=F384k9d...
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-brand-muted font-bold">Saved Notes</label>
-                  <div className="bg-[#09090B] px-3 py-2 rounded border border-[#23242B] text-xs text-brand-muted mt-1 italic font-sans font-medium">
-                    "I love the split-screen zoom transition at 0:14!"
-                  </div>
-                </div>
+            </div>
+
+            {/* RIGHT SIDE: Vertical Flow Explaining How Extension Works */}
+            <div className="lg:col-span-6 flex flex-col gap-6 text-left">
+              <div className="mb-2">
+                <h3 className="text-xl font-bold text-white tracking-tight mb-1">How It Works</h3>
+                <p className="text-xs text-brand-muted font-sans font-medium">Capture any idea in less than 10 seconds.</p>
               </div>
 
-              <button 
-                onClick={onStart}
-                className="w-full py-3.5 bg-[#4F8CFF] text-white font-bold rounded-xl shadow-[0_0_15px_rgba(79,140,255,0.25)] hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center justify-center gap-1 cursor-pointer mt-4"
-              >
-                Save Idea <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              {[
+                {
+                  step: "①",
+                  icon: Compass,
+                  title: "Find Inspiration",
+                  desc: "Discover ideas while scrolling Instagram, YouTube, Pinterest or any website."
+                },
+                {
+                  step: "②",
+                  icon: Chrome,
+                  title: "Open IdeaVault",
+                  desc: "Click the Chrome extension without leaving the page."
+                },
+                {
+                  step: "③",
+                  icon: Mic,
+                  title: "Save Why It Inspired You",
+                  desc: "Write a quick note or record your thoughts before you forget."
+                },
+                {
+                  step: "④",
+                  icon: Sparkles,
+                  title: "Create Later",
+                  desc: "Everything is organized inside your IdeaVault dashboard, ready whenever you need it."
+                }
+              ].map((item, index, arr) => {
+                const Icon = item.icon;
+                const isLast = index === arr.length - 1;
+                return (
+                  <div key={item.title} className="relative flex items-start gap-4 group">
+                    {/* Vertical Connecting Line */}
+                    {!isLast && (
+                      <div className="absolute left-[21px] top-11 bottom-[-24px] w-[2px] bg-gradient-to-b from-[#4F8CFF]/40 via-[#23242B] to-[#23242B]" />
+                    )}
+                    {/* Icon Badge */}
+                    <div className="w-11 h-11 rounded-xl bg-[#111217] border border-[#23242B] group-hover:border-[#4F8CFF]/60 group-hover:bg-[#181920] flex items-center justify-center text-[#4F8CFF] shrink-0 transition-all shadow-md z-10">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    {/* Step Content */}
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-[#8B5CF6]">{item.step}</span>
+                        <h3 className="text-base font-bold text-white tracking-tight">{item.title}</h3>
+                      </div>
+                      <p className="text-xs text-brand-muted mt-1 leading-relaxed font-sans font-medium max-w-md">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+
+          {/* FEATURE HIGHLIGHTS: Four Small Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+            <div className="bg-[#111217] p-5 rounded-2xl border border-[#23242B] hover:border-[#4F8CFF]/40 transition-all text-left">
+              <div className="w-9 h-9 rounded-xl bg-[#09090B] border border-[#23242B] flex items-center justify-center text-[#4F8CFF] mb-3 text-sm font-bold">
+                ⚡
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1">One Click Save</h4>
+              <p className="text-xs text-brand-muted leading-relaxed font-sans">
+                Save inspiration without switching tabs.
+              </p>
+            </div>
+
+            <div className="bg-[#111217] p-5 rounded-2xl border border-[#23242B] hover:border-[#8B5CF6]/40 transition-all text-left">
+              <div className="w-9 h-9 rounded-xl bg-[#09090B] border border-[#23242B] flex items-center justify-center text-[#8B5CF6] mb-3 text-sm font-bold">
+                🎙
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1">Voice Notes</h4>
+              <p className="text-xs text-brand-muted leading-relaxed font-sans">
+                Record your thoughts instantly.
+              </p>
+            </div>
+
+            <div className="bg-[#111217] p-5 rounded-2xl border border-[#23242B] hover:border-[#4F8CFF]/40 transition-all text-left">
+              <div className="w-9 h-9 rounded-xl bg-[#09090B] border border-[#23242B] flex items-center justify-center text-[#4F8CFF] mb-3 text-sm font-bold">
+                🖼
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1">Auto Metadata</h4>
+              <p className="text-xs text-brand-muted leading-relaxed font-sans">
+                Automatically captures title, URL and thumbnail.
+              </p>
+            </div>
+
+            <div className="bg-[#111217] p-5 rounded-2xl border border-[#23242B] hover:border-[#8B5CF6]/40 transition-all text-left">
+              <div className="w-9 h-9 rounded-xl bg-[#09090B] border border-[#23242B] flex items-center justify-center text-[#8B5CF6] mb-3 text-sm font-bold">
+                ☁
+              </div>
+              <h4 className="text-sm font-bold text-white mb-1">Instant Sync</h4>
+              <p className="text-xs text-brand-muted leading-relaxed font-sans">
+                Everything syncs to your IdeaVault account.
+              </p>
             </div>
           </div>
+
+          {/* DOWNLOAD AREA: Centered CTA Card */}
+          <div className="bg-gradient-to-r from-[#111217] via-[#181920] to-[#111217] border border-[#23242B] rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#4F8CFF]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-[#8B5CF6]/10 rounded-full blur-3xl pointer-events-none" />
+
+            <h3 className="text-2xl sm:text-3xl font-display font-normal uppercase tracking-tight text-white mb-3">
+              Ready to Save Ideas Faster?
+            </h3>
+            <p className="text-brand-muted text-sm max-w-lg mx-auto font-sans leading-relaxed mb-8">
+              Install the IdeaVault Chrome Extension and start capturing inspiration in one click.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+              <a
+                href="/ideavault-extension.zip"
+                download="ideavault-extension.zip"
+                className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-lg shadow-[#4F8CFF]/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                ⬇ Download Chrome Extension
+              </a>
+              <a
+                href="/ideavault-extension.zip"
+                download="ideavault-extension.zip"
+                className="text-xs text-[#4F8CFF] hover:text-white font-semibold font-mono underline underline-offset-4 cursor-pointer transition-colors"
+              >
+                Installation Guide
+              </a>
+            </div>
+
+            <p className="text-[11px] text-zinc-500 font-mono">
+              Chrome Web Store release coming soon.
+            </p>
+          </div>
+
         </div>
       </section>
 
@@ -1046,11 +1243,6 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
           </div>
         </div>
       </footer>
-
-      <ExtensionModal 
-        isOpen={showExtensionModal} 
-        onClose={() => setShowExtensionModal(false)} 
-      />
     </div>
   );
 }

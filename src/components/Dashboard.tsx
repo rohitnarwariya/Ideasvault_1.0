@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { Inspiration } from "../types";
 import InspirationCard from "./InspirationCard";
-import ExtensionModal from "./ExtensionModal";
 
 interface DashboardProps {
   inspirations: Inspiration[];
@@ -39,7 +38,6 @@ export default function Dashboard({
   const [newBoardName, setNewBoardName] = useState("");
   const [activeWatchVideoId, setActiveWatchVideoId] = useState<string | null>(null);
   const [activeWatchVideoTitle, setActiveWatchVideoTitle] = useState<string>("");
-  const [showExtensionModal, setShowExtensionModal] = useState(false);
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,13 +196,14 @@ export default function Dashboard({
         </div>
 
         <div className="flex items-center gap-3 self-start md:self-center">
-          <button
-            onClick={() => setShowExtensionModal(true)}
+          <a
+            href="/ideavault-extension.zip"
+            download="ideavault-extension.zip"
             className="px-4 py-3 bg-[#111217] hover:bg-[#181920] border border-[#23242B] text-white font-sans font-medium rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
           >
             <Chrome className="w-4 h-4 text-[#4F8CFF]" />
             Chrome Extension
-          </button>
+          </a>
 
           <button
             onClick={onAddInspiration}
@@ -214,11 +213,6 @@ export default function Dashboard({
           </button>
         </div>
       </div>
-
-      <ExtensionModal 
-        isOpen={showExtensionModal} 
-        onClose={() => setShowExtensionModal(false)} 
-      />
 
       {/* Filter boards strip & Search panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-center">
