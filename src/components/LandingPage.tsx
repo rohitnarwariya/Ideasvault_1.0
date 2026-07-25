@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { 
   Lock, Play, ArrowRight, Sparkles, Chrome, Mic, Search, Layers, Compass, HelpCircle, 
-  ChevronDown, ChevronUp, Star, Check, Link, Pencil, Folder, CheckCircle2
+  ChevronDown, ChevronUp, Star, Check, Link, Pencil, Folder, CheckCircle2, MessageSquare, Loader2, Send
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -193,6 +193,61 @@ function FloatingCard({ platform, stats, notes, className, yRange, duration }: F
 
 export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
+  // Feedback form state
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackCategory, setFeedbackCategory] = useState("Bug Report");
+  const [feedbackProblem, setFeedbackProblem] = useState("");
+  const [feedbackDetails, setFeedbackDetails] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackName.trim() || !feedbackProblem.trim() || !feedbackCategory) {
+      setFeedbackError("Please fill out all required fields.");
+      return;
+    }
+
+    setFeedbackError(null);
+    setIsSubmittingFeedback(true);
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: feedbackName.trim(),
+          email: feedbackEmail.trim() || undefined,
+          category: feedbackCategory,
+          problem: feedbackProblem.trim(),
+          details: feedbackDetails.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit feedback.");
+      }
+
+      setFeedbackSuccess(true);
+      setFeedbackName("");
+      setFeedbackEmail("");
+      setFeedbackCategory("Bug Report");
+      setFeedbackProblem("");
+      setFeedbackDetails("");
+
+      setTimeout(() => {
+        setFeedbackSuccess(false);
+      }, 6000);
+    } catch (err: any) {
+      setFeedbackError(err.message || "An error occurred while sending feedback. Please try again.");
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   const faqs = [
     {
@@ -1164,6 +1219,176 @@ export default function LandingPage({ onStart, onLogin }: LandingPageProps) {
               )}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Feedback & Suggestions Section */}
+      <section id="feedback" className="max-w-7xl mx-auto px-6 py-24 relative z-10 border-t border-[#23242B]">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#23242B] bg-[#111217] text-[#4F8CFF] text-xs font-bold tracking-wider mb-4 uppercase">
+            <MessageSquare className="w-3.5 h-3.5 text-[#8B5CF6]" /> 💬 Feedback & Suggestions
+          </div>
+          <h2 className="font-display font-normal text-3xl md:text-5xl uppercase tracking-tight leading-tight text-white text-center">
+            Help Shape the Future of IdeaVault
+          </h2>
+          <p className="text-brand-muted text-sm md:text-base max-w-2xl mx-auto font-sans leading-relaxed mt-4 font-medium">
+            Found a bug? Have an idea? Missing a feature?<br />
+            Your feedback helps us build a better IdeaVault for every creator.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          {/* Left Side */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
+            <div className="bg-[#111217] border border-[#23242B] rounded-2xl p-8 relative overflow-hidden shadow-xl">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#8B5CF6]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+              
+              <h3 className="text-2xl font-bold text-white tracking-tight mb-4 flex items-center gap-2.5 font-sans">
+                <Sparkles className="w-5 h-5 text-[#4F8CFF]" />
+                Every Idea Matters
+              </h3>
+
+              <p className="text-sm text-brand-muted font-sans leading-relaxed mb-8 font-medium">
+                IdeaVault is built with creators in mind. If you find a bug, want a feature, or have an idea that could improve the experience, we'd love to hear it.
+              </p>
+
+              <div className="space-y-3">
+                {[
+                  "Report Bugs",
+                  "Suggest New Features",
+                  "Share Product Ideas",
+                  "Improve Creator Experience"
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-[#09090B] border border-[#23242B] px-4 py-3.5 rounded-xl text-sm font-semibold text-white font-sans">
+                    <span className="text-emerald-400 font-bold text-base">✅</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Premium Feedback Form */}
+          <div className="lg:col-span-7 bg-[#111217] border border-[#23242B] rounded-2xl p-8 shadow-2xl relative">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-1 bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6] rounded-t-2xl" />
+
+            {feedbackSuccess && (
+              <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-start gap-3 text-emerald-400 text-sm font-medium animate-fadeIn">
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-emerald-400" />
+                <div>
+                  <p className="font-bold text-emerald-300">Thank you! Your feedback has been sent successfully.</p>
+                  <p className="text-xs text-emerald-400/80 mt-0.5">We appreciate you taking the time to help improve IdeaVault.</p>
+                </div>
+              </div>
+            )}
+
+            {feedbackError && (
+              <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm font-medium">
+                {feedbackError}
+              </div>
+            )}
+
+            <form onSubmit={handleFeedbackSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Name */}
+                <div>
+                  <label className="block text-xs font-bold text-white mb-2 uppercase tracking-wider font-sans">
+                    Name <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={feedbackName}
+                    onChange={(e) => setFeedbackName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#4F8CFF] transition-colors font-sans"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-bold text-white mb-2 uppercase tracking-wider font-sans">
+                    Email <span className="text-zinc-500 font-normal lowercase">(optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={feedbackEmail}
+                    onChange={(e) => setFeedbackEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#4F8CFF] transition-colors font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-xs font-bold text-white mb-2 uppercase tracking-wider font-sans">
+                  Category <span className="text-rose-400">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={feedbackCategory}
+                    onChange={(e) => setFeedbackCategory(e.target.value)}
+                    className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#4F8CFF] transition-colors font-sans appearance-none cursor-pointer pr-10"
+                  >
+                    <option value="Bug Report">Bug Report</option>
+                    <option value="Feature Request">Feature Request</option>
+                    <option value="Improvement">Improvement</option>
+                    <option value="General Feedback">General Feedback</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Problem / Suggestion */}
+              <div>
+                <label className="block text-xs font-bold text-white mb-2 uppercase tracking-wider font-sans">
+                  Problem / Suggestion <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={feedbackProblem}
+                  onChange={(e) => setFeedbackProblem(e.target.value)}
+                  placeholder="Describe the issue, idea, or suggestion..."
+                  className="w-full bg-[#09090B] border border-[#23242B] rounded-xl p-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#4F8CFF] transition-colors font-sans resize-y"
+                />
+              </div>
+
+              {/* Optional Details */}
+              <div>
+                <label className="block text-xs font-bold text-white mb-2 uppercase tracking-wider font-sans">
+                  Optional Details <span className="text-zinc-500 font-normal lowercase">(optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={feedbackDetails}
+                  onChange={(e) => setFeedbackDetails(e.target.value)}
+                  placeholder="Anything else you'd like us to know?"
+                  className="w-full bg-[#09090B] border border-[#23242B] rounded-xl p-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#4F8CFF] transition-colors font-sans resize-y"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmittingFeedback}
+                className="w-full py-4 bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6] text-white font-bold text-sm rounded-xl shadow-lg hover:shadow-purple-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider mt-2"
+              >
+                {isSubmittingFeedback ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🚀 Send Feedback</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 
