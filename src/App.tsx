@@ -388,36 +388,56 @@ export default function App() {
     }
   };
 
-  // History sync router view
+  // History sync router view - using URL hash to preserve root '/' for SPA reloads without triggering server 404s
   useEffect(() => {
-    if (view === "profile" && window.location.pathname !== "/profile") {
-      window.history.pushState({}, "", "/profile");
-    } else if (view === "dashboard" && window.location.pathname !== "/dashboard" && window.location.pathname !== "/analysis") {
-      window.history.pushState({}, "", "/dashboard");
-    } else if (view === "landing" && window.location.pathname !== "/") {
-      window.history.pushState({}, "", "/");
+    if (view === "profile") {
+      if (window.location.hash !== "#profile") {
+        window.history.replaceState({}, "", "/#profile");
+      }
+    } else if (view === "dashboard") {
+      if (window.location.hash !== "#dashboard") {
+        window.history.replaceState({}, "", "/#dashboard");
+      }
+    } else if (view === "landing") {
+      if (window.location.hash || window.location.pathname !== "/") {
+        window.history.replaceState({}, "", "/");
+      }
     }
   }, [view]);
 
   // Auth Session & State Monitoring
   useEffect(() => {
-    // Address bar entry point synchronization
-    const handlePopState = () => {
+    // Address bar entry point synchronization helper
+    const getInitialView = () => {
+      const hash = window.location.hash;
       const path = window.location.pathname;
-      if (path === "/profile") {
-        setView("profile");
-      } else if (path === "/dashboard" || path === "/analysis") {
-        setView("dashboard");
+      if (hash === "#profile" || path === "/profile") return "profile";
+      if (hash === "#dashboard" || hash === "#analysis" || path === "/dashboard" || path === "/analysis") return "dashboard";
+      return null;
+    };
+
+    const handlePopState = () => {
+      const targetView = getInitialView();
+      if (targetView) {
+        setView(targetView);
       } else {
         setView("landing");
       }
     };
     
     window.addEventListener("popstate", handlePopState);
+    window.addEventListener("hashchange", handlePopState);
+
+    // Normalize any legacy pathnames like /profile to /#profile to ensure reloads hit '/'
+    if (window.location.pathname !== "/") {
+      const path = window.location.pathname;
+      const cleanHash = path === "/profile" ? "#profile" : path === "/dashboard" || path === "/analysis" ? "#dashboard" : "";
+      window.history.replaceState({}, "", "/" + cleanHash);
+    }
 
     if (!isSupabaseConfigured) {
       setInspirations(INITIAL_INSPIRATIONS);
-      const path = window.location.pathname;
+      const initialView = getInitialView();
       const cachedDemo = localStorage.getItem('profile_demo-user');
       let demoName = "Creator";
       let demoAvatar = "";
@@ -429,7 +449,7 @@ export default function App() {
         } catch {}
       }
 
-      if (path === "/profile") {
+      if (initialView === "profile") {
         setUser({
           id: "demo-user",
           name: demoName,
@@ -437,7 +457,7 @@ export default function App() {
           avatar: demoAvatar
         });
         setView("profile");
-      } else if (path === "/dashboard" || path === "/analysis") {
+      } else if (initialView === "dashboard") {
         setUser({
           id: "demo-user",
           name: demoName,
@@ -450,6 +470,7 @@ export default function App() {
       }
       return () => {
         window.removeEventListener("popstate", handlePopState);
+        window.removeEventListener("hashchange", handlePopState);
       };
     }
 
@@ -465,9 +486,8 @@ export default function App() {
         loadUserData(session.user.id);
         fetchProfile(session.user.id);
         
-        // Match address bar URL initial status
-        const path = window.location.pathname;
-        if (path === "/profile") {
+        const initialView = getInitialView();
+        if (initialView === "profile") {
           setView("profile");
         } else {
           setView("dashboard");
@@ -494,8 +514,8 @@ export default function App() {
         loadUserData(session.user.id);
         fetchProfile(session.user.id);
         
-        const path = window.location.pathname;
-        if (path === "/profile") {
+        const initialView = getInitialView();
+        if (initialView === "profile") {
           setView("profile");
         } else {
           setView("dashboard");
@@ -512,6 +532,7 @@ export default function App() {
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("hashchange", handlePopState);
     };
   }, []);
 
