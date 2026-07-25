@@ -57,6 +57,20 @@ export default function App() {
 
   // Helper: Upload file to storage with dynamic cascading fallback
   const uploadToStorage = async (bucketName: string, filePath: string, fileData: Blob | File): Promise<string | null> => {
+    const convertToDataUrl = (file: Blob | File): Promise<string> => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    if (!isSupabaseConfigured) {
+      return convertToDataUrl(fileData);
+    }
+
     try {
       const { data, error } = await supabase.storage
         .from(bucketName)
@@ -67,31 +81,21 @@ export default function App() {
       
       if (error) {
         console.warn(`Upload to bucket "${bucketName}" failed, falling back to local preview:`, error.message);
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(fileData);
-        });
+        return convertToDataUrl(fileData);
       }
       
       if (data) {
         const { data: { publicUrl } } = supabase.storage
           .from(bucketName)
           .getPublicUrl(filePath);
-        return publicUrl;
+        if (publicUrl && publicUrl.startsWith("http") && !publicUrl.includes("placeholder")) {
+          return publicUrl;
+        }
       }
-      return null;
+      return convertToDataUrl(fileData);
     } catch (err) {
       console.warn(`Exception uploading to bucket "${bucketName}", falling back to local preview:`, err);
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.readAsDataURL(fileData);
-      });
+      return convertToDataUrl(fileData);
     }
   };
 
@@ -414,12 +418,31 @@ export default function App() {
     if (!isSupabaseConfigured) {
       setInspirations(INITIAL_INSPIRATIONS);
       const path = window.location.pathname;
-      if (path === "/dashboard" || path === "/analysis" || path === "/profile") {
+      const cachedDemo = localStorage.getItem('profile_demo-user');
+      let demoName = "Creator";
+      let demoAvatar = "";
+      if (cachedDemo) {
+        try {
+          const parsed = JSON.parse(cachedDemo);
+          if (parsed.username) demoName = parsed.username;
+          if (parsed.avatar_url) demoAvatar = parsed.avatar_url;
+        } catch {}
+      }
+
+      if (path === "/profile") {
         setUser({
           id: "demo-user",
-          name: "Creator",
+          name: demoName,
           email: "demo@ideavault.app",
-          avatar: ""
+          avatar: demoAvatar
+        });
+        setView("profile");
+      } else if (path === "/dashboard" || path === "/analysis") {
+        setUser({
+          id: "demo-user",
+          name: demoName,
+          email: "demo@ideavault.app",
+          avatar: demoAvatar
         });
         setView("dashboard");
       } else {

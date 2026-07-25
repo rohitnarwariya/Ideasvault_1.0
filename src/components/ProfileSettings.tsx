@@ -150,31 +150,66 @@ export default function ProfileSettings({
     }
   };
 
+  // Keep local state in sync when profile or user prop updates
+  React.useEffect(() => {
+    if (profile) {
+      if (profile.username) setUsername(profile.username);
+      if (profile.full_name !== undefined) setFullName(profile.full_name || "");
+      if (profile.avatar_url !== undefined) setAvatarUrl(profile.avatar_url || "");
+      if (profile.bio !== undefined) setBio(profile.bio || "");
+      if (profile.interests) setInterests(profile.interests);
+    } else if (user) {
+      if (user.name) setUsername(user.name);
+      if (user.avatar) setAvatarUrl(user.avatar);
+    }
+  }, [profile, user]);
+
   // Avatar upload
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const file = e.target.files?.[0];
-    if (!file || !user.id) return;
+    if (!file) return;
     
     setIsUploading(true);
     setErrorMsg(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+      const userId = user.id || profile?.id || "demo-user";
+      const fileExt = file.name.split('.').pop() || "png";
+      const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
       
       const uploadedUrl = await uploadToStorage('ideas', filePath, file);
       if (uploadedUrl) {
         setAvatarUrl(uploadedUrl);
-        // Save immediately or let the user click save
+
+        // Immediately update avatar across navbar, profile page, and account settings
+        const updatedProfile: Profile = {
+          id: userId,
+          username: username.trim() || user.name || "Creator",
+          full_name: fullName.trim() || undefined,
+          avatar_url: uploadedUrl,
+          bio: bio.trim() || undefined,
+          interests: interests,
+          created_at: profile?.created_at
+        };
+
+        await onProfileUpdate(updatedProfile);
+
         setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
+        setTimeout(() => setSaveSuccess(false), 2500);
       } else {
-        setErrorMsg("Failed to upload image. Please check your storage bucket.");
+        setErrorMsg("Failed to upload image. Please try again.");
       }
     } catch (err: any) {
+      console.error("Error during profile picture upload:", err);
       setErrorMsg(err.message || "Error uploading file.");
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 

@@ -40,10 +40,17 @@ async function setupVite() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+    
+    // SPA Fallback for client-side routing in dev
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) return next();
+      res.sendFile(path.join(process.cwd(), "index.html"));
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) return next();
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
