@@ -1126,7 +1126,7 @@ export default function App() {
       {/* Dynamic top bar in dashboard */}
       {view !== "landing" && (
         <header className="border-b border-brand-border bg-[#09090B]/90 backdrop-blur-xl sticky top-0 z-40 pt-safe">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
             <div 
               onClick={() => {
                 setView("landing");

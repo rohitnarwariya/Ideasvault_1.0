@@ -215,8 +215,8 @@ export default function InspirationCard({
       className="bg-[#111217] rounded-2xl md:rounded-3xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group shadow-lg"
       onClick={() => onViewInspiration(inspiration)}
     >
-      {/* 1. Preview Image / Thumbnail (16:10 or 4:3 on mobile) */}
-      <div className="w-full aspect-[16/10] sm:aspect-[4/3] md:aspect-auto md:h-48 overflow-hidden relative bg-[#09090B] border-b border-[#23242B]/40 shrink-0">
+      {/* 1. Preview Image / Thumbnail (Proportional 16:10) */}
+      <div className="w-full aspect-[16/10] overflow-hidden relative bg-[#09090B] border-b border-[#23242B]/40 shrink-0">
         {isLoadingImage ? (
           <div className="w-full h-full bg-[#1a1b22] animate-pulse flex items-center justify-center">
             <ImageIcon className="w-5 h-5 text-brand-muted/30 animate-pulse" />
@@ -239,97 +239,90 @@ export default function InspirationCard({
         )}
       </div>
 
-      {/* 2. Main Card Content Area */}
-      <div className="p-2.5 sm:p-3 md:p-5 flex-1 flex flex-col justify-between">
+      {/* 2. Main Card Content Area (Compact, Clean, No Long Description Block) */}
+      <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
         <div>
           {/* Row 1: Platform Badge & Saved Date */}
-          <div className="flex items-center justify-between gap-1.5 mb-1.5 md:mb-3">
-            <span className={`px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-mono border uppercase tracking-wider font-bold flex items-center gap-1 shrink-0 ${platformInfo.bgClass}`}>
+          <div className="flex items-center justify-between gap-1.5 mb-1.5 sm:mb-2">
+            <span className={`px-1.5 py-0.5 rounded-md text-[8px] sm:text-[9px] font-mono border uppercase tracking-wider font-bold flex items-center gap-1 shrink-0 ${platformInfo.bgClass}`}>
               <PlatformBadgeIcon iconType={platformInfo.iconType} emoji={platformInfo.emoji} />
-              <span className="truncate max-w-[80px] sm:max-w-none">{platformInfo.label}</span>
+              <span className="truncate max-w-[70px] sm:max-w-none">{platformInfo.label}</span>
             </span>
 
-            <span className="text-[8px] sm:text-[10px] font-mono text-brand-muted/70 truncate">
+            <span className="text-[8px] sm:text-[9px] font-mono text-brand-muted/70 truncate">
               {inspiration.createdAt}
             </span>
           </div>
 
           {/* Row 2: Title */}
-          <h3 className="font-sans font-bold text-xs sm:text-sm md:text-lg text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
+          <h3 className="font-sans font-bold text-xs sm:text-[13px] text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
             {inspiration.title}
           </h3>
-
-          {/* Row 3: Description (Desktop only, hidden on mobile cards as requested) */}
-          {(inspiration.notes || inspiration.voiceTranscript) && (
-            <p className="hidden md:block mt-2.5 text-xs text-brand-muted/90 line-clamp-2 leading-relaxed font-sans">
-              {inspiration.notes || inspiration.voiceTranscript}
-            </p>
-          )}
         </div>
 
-        {/* Row 4: Mobile Tags + Actions Menu Bar */}
-        <div className="mt-2.5 md:mt-3 pt-2 md:pt-0 border-t border-[#23242B]/40 md:border-t-0 flex items-center justify-between gap-1.5">
+        {/* Row 3: Tags + Mobile Actions */}
+        <div className="mt-2 pt-1.5 flex items-center justify-between gap-1.5">
           {/* Tags */}
-          <div className="flex items-center gap-1 flex-wrap overflow-hidden max-h-6">
+          <div className="flex items-center gap-1 flex-wrap overflow-hidden max-h-5">
             {inspiration.tags && inspiration.tags.length > 0 ? (
               inspiration.tags.slice(0, 2).map(tag => (
                 <span
                   key={tag}
-                  className="text-[8px] sm:text-[9px] font-mono bg-[#09090B] px-1.5 py-0.5 rounded text-brand-muted border border-[#23242B]/60 truncate max-w-[70px] sm:max-w-[90px]"
+                  className="text-[8px] font-mono bg-[#09090B] px-1.5 py-0.5 rounded text-brand-muted border border-[#23242B]/60 truncate max-w-[65px] sm:max-w-[85px]"
                 >
                   #{tag}
                 </span>
               ))
             ) : (
-              <span className="text-[8px] sm:text-[9px] font-mono text-brand-muted/40">
+              <span className="text-[8px] font-mono text-brand-muted/40">
                 #{inspiration.board.replace(/[^\w\s]/g, "").trim().split(" ")[0] || "Idea"}
               </span>
             )}
           </div>
 
-          {/* Mobile Quick Action / Menu trigger */}
+          {/* Mobile Favorite Trigger */}
           <div className="md:hidden flex items-center">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFavorite(inspiration.id);
               }}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+              className={`p-1 rounded-md border transition-all cursor-pointer ${
                 inspiration.isFavorite
                   ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-500"
                   : "bg-[#09090B] border-[#23242B] text-brand-muted hover:text-white"
               }`}
               title={inspiration.isFavorite ? "Favorited" : "Favorite"}
             >
-              <Star className={`w-3 h-3 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
+              <Star className={`w-2.5 h-2.5 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
             </button>
           </div>
         </div>
       </div>
 
       {/* 3. Desktop Bottom Footer Section */}
-      <div className="hidden md:flex px-5 py-3 bg-[#09090B]/40 border-t border-[#23242B]/40 items-center justify-between text-[10px] font-mono text-brand-muted">
+      <div className="hidden md:flex px-3 py-1.5 bg-[#09090B]/50 border-t border-[#23242B]/40 items-center justify-between text-[9px] font-mono text-brand-muted">
         {/* Collection / Board */}
-        <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4F8CFF] truncate max-w-[150px]">
-          <Folder className="w-3.5 h-3.5 shrink-0" />
+        <span className="flex items-center gap-1 font-bold uppercase tracking-wider text-[#4F8CFF] truncate max-w-[120px]">
+          <Folder className="w-3 h-3 shrink-0" />
           <span className="truncate">{inspiration.board.replace(/[^\w\s]/g, "").trim()}</span>
         </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Favorite Star Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(inspiration.id);
             }}
-            className={`p-2 rounded-xl border transition-all cursor-pointer min-w-[34px] min-h-[34px] flex items-center justify-center ${
+            className={`p-1 rounded-md border transition-all cursor-pointer min-w-[24px] min-h-[24px] flex items-center justify-center ${
               inspiration.isFavorite
                 ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-500"
                 : "bg-[#09090B] border-[#23242B] text-brand-muted hover:text-white"
             }`}
             title={inspiration.isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <Star className={`w-3.5 h-3.5 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
+            <Star className={`w-2.5 h-2.5 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
           </button>
 
           {/* Open Reference Link */}
@@ -339,10 +332,10 @@ export default function InspirationCard({
               target="_blank"
               referrerPolicy="no-referrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-2 rounded-xl border border-[#23242B] bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/40 transition-colors min-w-[34px] min-h-[34px] flex items-center justify-center"
+              className="p-1 rounded-md border border-[#23242B] bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/40 transition-colors min-w-[24px] min-h-[24px] flex items-center justify-center"
               title="Open source URL"
             >
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              <ArrowUpRight className="w-2.5 h-2.5" />
             </a>
           )}
         </div>

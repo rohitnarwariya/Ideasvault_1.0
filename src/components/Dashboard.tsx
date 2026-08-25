@@ -205,10 +205,10 @@ export default function Dashboard({
         : `Save your first ${cleanBoardName} inspiration.`;
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-8 md:py-12 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30 pb-28 md:pb-12">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 md:py-8 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30 pb-28 md:pb-12">
       
       {/* 1. Title Block & Action Buttons (Hero Section) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-6 pb-4 sm:pb-6 border-b border-[#23242B] mb-4 sm:mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-6 pb-3.5 sm:pb-5 border-b border-[#23242B] mb-3.5 sm:mb-5">
         <div>
           <h1 className="font-display font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-wider text-white leading-none">
             INSPIRATION <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6]">VAULT</span>
@@ -387,9 +387,9 @@ export default function Dashboard({
         </motion.div>
       ) : (cleanBoardName.toLowerCase().includes("pinterest") || activeBoard.toLowerCase().includes("pinterest")) ? (
         /* PINTEREST MASONRY (Columns on Desktop, 2-column Grid on Mobile) */
-        <div className="grid grid-cols-2 md:columns-2 lg:columns-3 xl:columns-4 gap-3 sm:gap-4 md:gap-6 md:space-y-6 md:block">
+        <div className="grid grid-cols-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 md:gap-5 md:space-y-5 md:block">
           {filteredInspirations.map(insp => (
-            <div key={insp.id} className="md:break-inside-avoid md:mb-6">
+            <div key={insp.id} className="md:break-inside-avoid md:mb-5">
               <InspirationCard
                 inspiration={insp}
                 onToggleFavorite={onToggleFavorite}
@@ -399,8 +399,8 @@ export default function Dashboard({
           ))}
         </div>
       ) : (
-        /* STANDARD 2-COLUMN MOBILE GRID / 3-4 COLUMN DESKTOP GRID */
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-6">
+        /* STANDARD 2-COLUMN MOBILE GRID / 3-4-5 COLUMN DESKTOP GRID */
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-4">
           {filteredInspirations.map(insp => (
             <InspirationCard
               key={insp.id}
