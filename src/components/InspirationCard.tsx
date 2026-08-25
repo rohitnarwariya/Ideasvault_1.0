@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Folder, Star, ArrowUpRight, Image as ImageIcon } from "lucide-react";
+import { Folder, Star, ArrowUpRight, Image as ImageIcon, Instagram, Youtube, Globe, Pin, FileText, Code2, Music, Linkedin } from "lucide-react";
 import { Inspiration } from "../types";
 import { fetchPreviewImage } from "../lib/preview";
 
@@ -12,6 +12,24 @@ interface InspirationCardProps {
   onUpdateImage?: (id: string, imageUrl: string) => void;
 }
 
+export const DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000&auto=format&fit=crop";
+
+export function isInvalidOrInstagramPlaceholder(url?: string | null): boolean {
+  if (!url || typeof url !== "string" || url.trim() === "") return true;
+  const lower = url.toLowerCase().trim();
+  if (
+    lower.includes("instagram.com/static") ||
+    lower.includes("static.cdninstagram.com") ||
+    lower.includes("instagram.com/rsrc.php") ||
+    lower.includes("netflix") ||
+    lower.includes("favicon") ||
+    (lower.includes("instagram") && (lower.includes("logo") || lower.includes("glyph") || lower.includes("icon") || lower.includes("brand") || lower.includes("assets") || lower.includes("null")))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 // Helper to determine platform badge info
 export function getPlatformInfo(platform: string, url: string) {
   const platUpper = (platform || "").toUpperCase();
@@ -19,100 +37,124 @@ export function getPlatformInfo(platform: string, url: string) {
 
   if (platUpper === "YOUTUBE" || urlLower.includes("youtube.com") || urlLower.includes("youtu.be")) {
     return {
-      label: "📹 YouTube",
-      bgClass: "bg-red-950/25 text-red-400 border-red-900/40",
+      label: "YOUTUBE",
+      iconType: "youtube",
+      emoji: "📹",
+      bgClass: "bg-red-950/30 text-red-400 border-red-900/40",
       aspectRatio: "aspect-video" // 16:9
     };
   }
   if (platUpper === "INSTAGRAM" || urlLower.includes("instagram.com") || urlLower.includes("instagr.am")) {
     return {
-      label: "📸 Instagram",
-      bgClass: "bg-purple-950/25 text-purple-400 border-purple-900/40",
+      label: "INSTAGRAM",
+      iconType: "instagram",
+      emoji: "📸",
+      bgClass: "bg-purple-950/30 text-purple-400 border-purple-900/40",
       aspectRatio: "aspect-[4/5]"
     };
   }
   if (platUpper === "PINTEREST" || urlLower.includes("pinterest.com") || urlLower.includes("pin.it")) {
     return {
-      label: "📌 Pinterest",
-      bgClass: "bg-rose-950/25 text-rose-400 border-rose-900/40",
+      label: "PINTEREST",
+      iconType: "pinterest",
+      emoji: "📌",
+      bgClass: "bg-rose-950/30 text-rose-400 border-rose-900/40",
       aspectRatio: "aspect-[3/4]"
     };
   }
   if (urlLower.includes("twitter.com") || urlLower.includes("x.com")) {
     return {
-      label: "𝕏 X (Twitter)",
-      bgClass: "bg-sky-950/25 text-sky-400 border-sky-900/40",
+      label: "X (TWITTER)",
+      iconType: "x",
+      emoji: "𝕏",
+      bgClass: "bg-sky-950/30 text-sky-400 border-sky-900/40",
       aspectRatio: "aspect-video"
     };
   }
   if (platUpper === "REDDIT" || urlLower.includes("reddit.com") || urlLower.includes("redd.it")) {
     return {
-      label: "👽 Reddit",
-      bgClass: "bg-orange-950/25 text-orange-400 border-orange-900/40",
+      label: "REDDIT",
+      iconType: "reddit",
+      emoji: "👽",
+      bgClass: "bg-orange-950/30 text-orange-400 border-orange-900/40",
       aspectRatio: "aspect-video"
     };
   }
   if (platUpper === "LINKEDIN" || urlLower.includes("linkedin.com")) {
     return {
-      label: "💼 LinkedIn",
-      bgClass: "bg-blue-950/25 text-blue-400 border-blue-900/40",
+      label: "LINKEDIN",
+      iconType: "linkedin",
+      emoji: "💼",
+      bgClass: "bg-blue-950/30 text-blue-400 border-blue-900/40",
       aspectRatio: "aspect-video"
     };
   }
   if (urlLower.includes("tiktok.com")) {
     return {
-      label: "🎵 TikTok",
-      bgClass: "bg-cyan-950/25 text-cyan-400 border-cyan-900/40",
+      label: "TIKTOK",
+      iconType: "tiktok",
+      emoji: "🎵",
+      bgClass: "bg-cyan-950/30 text-cyan-400 border-cyan-900/40",
       aspectRatio: "aspect-[9/16]"
     };
   }
   if (urlLower.includes("medium.com")) {
     return {
-      label: "✍️ Medium",
-      bgClass: "bg-emerald-950/25 text-emerald-400 border-emerald-900/40",
+      label: "MEDIUM",
+      iconType: "article",
+      emoji: "✍️",
+      bgClass: "bg-emerald-950/30 text-emerald-400 border-emerald-900/40",
       aspectRatio: "aspect-video"
     };
   }
-  if (urlLower.includes("behance.net")) {
+  if (urlLower.includes("github.com") || platUpper === "GITHUB") {
     return {
-      label: "🎨 Behance",
-      bgClass: "bg-indigo-950/25 text-indigo-400 border-indigo-900/40",
-      aspectRatio: "aspect-video"
-    };
-  }
-  if (urlLower.includes("dribbble.com")) {
-    return {
-      label: "🏀 Dribbble",
-      bgClass: "bg-pink-950/25 text-pink-400 border-pink-900/40",
-      aspectRatio: "aspect-video"
-    };
-  }
-  if (platUpper === "GITHUB" || urlLower.includes("github.com")) {
-    return {
-      label: "🐙 GitHub",
-      bgClass: "bg-violet-950/25 text-violet-400 border-violet-900/40",
-      aspectRatio: "aspect-video"
-    };
-  }
-  if (urlLower.includes("producthunt.com")) {
-    return {
-      label: "🐱 Product Hunt",
-      bgClass: "bg-amber-950/25 text-amber-400 border-amber-900/40",
+      label: "GITHUB",
+      iconType: "github",
+      emoji: "🐙",
+      bgClass: "bg-violet-950/30 text-violet-400 border-violet-900/40",
       aspectRatio: "aspect-video"
     };
   }
   if (urlLower.includes("dev.to") || urlLower.includes("hashnode.com") || urlLower.includes("substack.com") || urlLower.includes("blog")) {
     return {
-      label: "📰 Article",
-      bgClass: "bg-teal-950/25 text-teal-400 border-teal-900/40",
+      label: "ARTICLE",
+      iconType: "article",
+      emoji: "📰",
+      bgClass: "bg-teal-950/30 text-teal-400 border-teal-900/40",
       aspectRatio: "aspect-video"
     };
   }
   return {
-    label: `🌐 ${platform || "Website"}`,
-    bgClass: "bg-zinc-900/60 text-zinc-300 border-zinc-800",
+    label: (platform || "WEBSITE").toUpperCase(),
+    iconType: "website",
+    emoji: "🌐",
+    bgClass: "bg-zinc-900/80 text-zinc-300 border-zinc-800",
     aspectRatio: "aspect-video"
   };
+}
+
+function PlatformBadgeIcon({ iconType, emoji }: { iconType: string; emoji: string }) {
+  switch (iconType) {
+    case "instagram":
+      return <Instagram className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "youtube":
+      return <Youtube className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "pinterest":
+      return <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "website":
+      return <Globe className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "github":
+      return <Code2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "tiktok":
+      return <Music className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "linkedin":
+      return <Linkedin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    case "article":
+      return <FileText className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />;
+    default:
+      return <span className="text-[10px] leading-none">{emoji}</span>;
+  }
 }
 
 export default function InspirationCard({
@@ -121,16 +163,19 @@ export default function InspirationCard({
   onViewInspiration,
   onUpdateImage
 }: InspirationCardProps) {
-  const [imageUrl, setImageUrl] = useState<string | undefined>(inspiration.imageUrl);
-  const [isLoadingImage, setIsLoadingImage] = useState<boolean>(!inspiration.imageUrl && Boolean(inspiration.url));
-  const [imageError, setImageError] = useState<boolean>(false);
+  const initialValid = inspiration.imageUrl && !isInvalidOrInstagramPlaceholder(inspiration.imageUrl)
+    ? inspiration.imageUrl
+    : null;
+
+  const [imageUrl, setImageUrl] = useState<string>(initialValid || DEFAULT_FALLBACK_IMAGE);
+  const [isLoadingImage, setIsLoadingImage] = useState<boolean>(!initialValid && Boolean(inspiration.url));
 
   // Automatically fetch preview image if missing
   useEffect(() => {
-    if (inspiration.imageUrl) {
-      setImageUrl(inspiration.imageUrl);
+    const raw = inspiration.imageUrl;
+    if (raw && !isInvalidOrInstagramPlaceholder(raw)) {
+      setImageUrl(raw);
       setIsLoadingImage(false);
-      setImageError(false);
       return;
     }
 
@@ -139,23 +184,22 @@ export default function InspirationCard({
       fetchPreviewImage(inspiration.url)
         .then(fetchedImg => {
           setIsLoadingImage(false);
-          if (fetchedImg) {
+          if (fetchedImg && !isInvalidOrInstagramPlaceholder(fetchedImg)) {
             setImageUrl(fetchedImg);
-            setImageError(false);
             if (onUpdateImage) {
               onUpdateImage(inspiration.id, fetchedImg);
             }
           } else {
-            setImageError(true);
+            setImageUrl(DEFAULT_FALLBACK_IMAGE);
           }
         })
         .catch(() => {
           setIsLoadingImage(false);
-          setImageError(true);
+          setImageUrl(DEFAULT_FALLBACK_IMAGE);
         });
     } else {
       setIsLoadingImage(false);
-      setImageError(true);
+      setImageUrl(DEFAULT_FALLBACK_IMAGE);
     }
   }, [inspiration.id, inspiration.imageUrl, inspiration.url]);
 
@@ -168,85 +212,117 @@ export default function InspirationCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.25 }}
-      className="bg-[#111217] rounded-3xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group shadow-lg"
+      className="bg-[#111217] rounded-2xl md:rounded-3xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer group shadow-lg"
       onClick={() => onViewInspiration(inspiration)}
     >
-      {/* 1. Preview Image Container */}
-      {isLoadingImage ? (
-        <div className="w-full h-48 bg-[#1a1b22] animate-pulse border-b border-[#23242B]/40 flex items-center justify-center">
-          <ImageIcon className="w-6 h-6 text-brand-muted/30 animate-pulse" />
-        </div>
-      ) : imageUrl && !imageError ? (
-        <div className="w-full h-48 overflow-hidden border-b border-[#23242B]/40 relative bg-[#09090B]">
+      {/* 1. Preview Image / Thumbnail (16:10 or 4:3 on mobile) */}
+      <div className="w-full aspect-[16/10] sm:aspect-[4/3] md:aspect-auto md:h-48 overflow-hidden relative bg-[#09090B] border-b border-[#23242B]/40 shrink-0">
+        {isLoadingImage ? (
+          <div className="w-full h-full bg-[#1a1b22] animate-pulse flex items-center justify-center">
+            <ImageIcon className="w-5 h-5 text-brand-muted/30 animate-pulse" />
+          </div>
+        ) : (
           <img
             loading="lazy"
             referrerPolicy="no-referrer"
-            src={imageUrl}
+            src={imageUrl || DEFAULT_FALLBACK_IMAGE}
             alt={inspiration.title}
-            onError={() => setImageError(true)}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              if (imageUrl !== DEFAULT_FALLBACK_IMAGE) {
+                setImageUrl(DEFAULT_FALLBACK_IMAGE);
+              }
+              e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+            }}
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
           />
-        </div>
-      ) : null}
+        )}
+      </div>
 
-      {/* 2. Main Card Content */}
-      <div className="p-6 flex-1 flex flex-col justify-between">
+      {/* 2. Main Card Content Area */}
+      <div className="p-2.5 sm:p-3 md:p-5 flex-1 flex flex-col justify-between">
         <div>
-          {/* Platform Badge & Saved Date */}
-          <div className="flex items-center justify-between mb-4">
-            <span className={`px-2.5 py-1 rounded-full text-[9px] font-mono border uppercase tracking-wider font-semibold ${platformInfo.bgClass}`}>
-              {platformInfo.label}
+          {/* Row 1: Platform Badge & Saved Date */}
+          <div className="flex items-center justify-between gap-1.5 mb-1.5 md:mb-3">
+            <span className={`px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-mono border uppercase tracking-wider font-bold flex items-center gap-1 shrink-0 ${platformInfo.bgClass}`}>
+              <PlatformBadgeIcon iconType={platformInfo.iconType} emoji={platformInfo.emoji} />
+              <span className="truncate max-w-[80px] sm:max-w-none">{platformInfo.label}</span>
             </span>
 
-            <span className="text-[10px] font-mono text-brand-muted/70">
+            <span className="text-[8px] sm:text-[10px] font-mono text-brand-muted/70 truncate">
               {inspiration.createdAt}
             </span>
           </div>
 
-          {/* User Title (ALWAYS preserved) */}
-          <h3 className="font-sans font-bold text-lg md:text-xl text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
+          {/* Row 2: Title */}
+          <h3 className="font-sans font-bold text-xs sm:text-sm md:text-lg text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
             {inspiration.title}
           </h3>
 
-          {/* User Description (ALWAYS preserved) */}
+          {/* Row 3: Description (Desktop only, hidden on mobile cards as requested) */}
           {(inspiration.notes || inspiration.voiceTranscript) && (
-            <p className="mt-3 text-xs text-brand-muted/90 line-clamp-3 leading-relaxed font-sans">
+            <p className="hidden md:block mt-2.5 text-xs text-brand-muted/90 line-clamp-2 leading-relaxed font-sans">
               {inspiration.notes || inspiration.voiceTranscript}
             </p>
           )}
+        </div>
 
-          {/* Optional Tags */}
-          {inspiration.tags && inspiration.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-4">
-              {inspiration.tags.map(tag => (
+        {/* Row 4: Mobile Tags + Actions Menu Bar */}
+        <div className="mt-2.5 md:mt-3 pt-2 md:pt-0 border-t border-[#23242B]/40 md:border-t-0 flex items-center justify-between gap-1.5">
+          {/* Tags */}
+          <div className="flex items-center gap-1 flex-wrap overflow-hidden max-h-6">
+            {inspiration.tags && inspiration.tags.length > 0 ? (
+              inspiration.tags.slice(0, 2).map(tag => (
                 <span
                   key={tag}
-                  className="text-[9px] font-mono bg-[#09090B]/60 px-2.5 py-0.5 rounded text-brand-muted border border-[#23242B]/40"
+                  className="text-[8px] sm:text-[9px] font-mono bg-[#09090B] px-1.5 py-0.5 rounded text-brand-muted border border-[#23242B]/60 truncate max-w-[70px] sm:max-w-[90px]"
                 >
                   #{tag}
                 </span>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <span className="text-[8px] sm:text-[9px] font-mono text-brand-muted/40">
+                #{inspiration.board.replace(/[^\w\s]/g, "").trim().split(" ")[0] || "Idea"}
+              </span>
+            )}
+          </div>
+
+          {/* Mobile Quick Action / Menu trigger */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(inspiration.id);
+              }}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                inspiration.isFavorite
+                  ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-500"
+                  : "bg-[#09090B] border-[#23242B] text-brand-muted hover:text-white"
+              }`}
+              title={inspiration.isFavorite ? "Favorited" : "Favorite"}
+            >
+              <Star className={`w-3 h-3 ${inspiration.isFavorite ? "fill-yellow-500" : ""}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 3. Bottom Footer Section */}
-      <div className="px-6 py-3.5 bg-[#09090B]/40 border-t border-[#23242B]/40 flex items-center justify-between text-[10px] font-mono text-brand-muted">
+      {/* 3. Desktop Bottom Footer Section */}
+      <div className="hidden md:flex px-5 py-3 bg-[#09090B]/40 border-t border-[#23242B]/40 items-center justify-between text-[10px] font-mono text-brand-muted">
         {/* Collection / Board */}
-        <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4F8CFF] truncate max-w-[140px]">
+        <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4F8CFF] truncate max-w-[150px]">
           <Folder className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{inspiration.board.replace(/[^\w\s]/g, "").trim()}</span>
         </span>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Favorite Star Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(inspiration.id);
             }}
-            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+            className={`p-2 rounded-xl border transition-all cursor-pointer min-w-[34px] min-h-[34px] flex items-center justify-center ${
               inspiration.isFavorite
                 ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-500"
                 : "bg-[#09090B] border-[#23242B] text-brand-muted hover:text-white"
@@ -263,7 +339,7 @@ export default function InspirationCard({
               target="_blank"
               referrerPolicy="no-referrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-lg border border-[#23242B] bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/40 transition-colors"
+              className="p-2 rounded-xl border border-[#23242B] bg-[#09090B] text-brand-muted hover:text-[#4F8CFF] hover:border-[#4F8CFF]/40 transition-colors min-w-[34px] min-h-[34px] flex items-center justify-center"
               title="Open source URL"
             >
               <ArrowUpRight className="w-3.5 h-3.5" />

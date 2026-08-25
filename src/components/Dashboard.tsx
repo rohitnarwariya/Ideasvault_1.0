@@ -48,6 +48,9 @@ export default function Dashboard({
     }
   };
 
+  const [sortBy, setSortBy] = useState<"latest" | "oldest" | "title" | "favorites">("latest");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
   // Helper to detect if an inspiration is a video
   const isItemVideo = (item: Inspiration) => {
     return (
@@ -76,9 +79,14 @@ export default function Dashboard({
   // - Virtual tab "📹 All Videos" (id: "all-videos")
   // - Followed by other boards, filtering out duplicates
   const navigationTabs = [
-    { id: "all", name: "★ All" },
-    { id: "all-videos", name: "📹 All Videos" },
-    ...boards.filter(b => b.id !== "all" && b.id !== "all-videos" && b.name !== "★ All" && b.name !== "📹 All Videos")
+    { id: "all", name: "★ ALL" },
+    { id: "all-videos", name: "📹 ALL VIDEOS" },
+    ...boards
+      .filter(b => b.id !== "all" && b.id !== "all-videos" && b.name !== "★ All" && b.name !== "📹 All Videos")
+      .map(b => ({
+        id: b.id,
+        name: b.name.toUpperCase()
+      }))
   ];
 
   // Unbiased, robust matching helper function for board/collection filtering
@@ -128,23 +136,38 @@ export default function Dashboard({
     return inspirations.filter(item => matchesBoardFilter(item, boardId, boardName)).length;
   };
 
-  // Filtered list based on active board and search query
-  const filteredInspirations = inspirations.filter(item => {
-    const activeBoardObj = boards.find(b => b.id === activeBoard);
-    const activeBoardName = activeBoardObj ? activeBoardObj.name : "";
-    
-    const matchesBoard = matchesBoardFilter(item, activeBoard, activeBoardName);
+  // Filtered and sorted list based on active board, search query, and sort criteria
+  const filteredInspirations = inspirations
+    .filter(item => {
+      const activeBoardObj = boards.find(b => b.id === activeBoard);
+      const activeBoardName = activeBoardObj ? activeBoardObj.name : "";
+      
+      const matchesBoard = matchesBoardFilter(item, activeBoard, activeBoardName);
 
-    // Search query matching
-    const matchesSearch = 
-      searchQuery.trim() === "" ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      item.platform.toLowerCase().includes(searchQuery.toLowerCase());
+      // Search query matching
+      const matchesSearch = 
+        searchQuery.trim() === "" ||
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        item.platform.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesBoard && matchesSearch;
-  });
+      return matchesBoard && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "favorites") {
+        if (a.isFavorite && !b.isFavorite) return -1;
+        if (!a.isFavorite && b.isFavorite) return 1;
+      }
+      if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      }
+      if (sortBy === "oldest") {
+        return (new Date(a.createdAt).getTime() || 0) - (new Date(b.createdAt).getTime() || 0);
+      }
+      // default "latest"
+      return (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0);
+    });
 
   // Assign and log exactly as requested
   const ideas = inspirations;
@@ -182,43 +205,42 @@ export default function Dashboard({
         : `Save your first ${cleanBoardName} inspiration.`;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-8 md:py-12 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30 pb-28 md:pb-12">
       
-      {/* Title block with trigger to capture modal */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#23242B] mb-8">
+      {/* 1. Title Block & Action Buttons (Hero Section) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-6 pb-4 sm:pb-6 border-b border-[#23242B] mb-4 sm:mb-6">
         <div>
-          <h1 className="font-display font-normal text-4xl md:text-6xl uppercase tracking-wide text-white mt-1 leading-none">
-            Inspiration <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6]">Vault</span>
+          <h1 className="font-display font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-wider text-white leading-none">
+            INSPIRATION <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6]">VAULT</span>
           </h1>
-          <p className="text-xs text-brand-muted mt-2.5 font-mono">
+          <p className="text-[11px] sm:text-xs text-brand-muted mt-1.5 sm:mt-2 font-mono">
             Save. Remember. Create. — Deep AI Context Blueprints Active
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start md:self-center">
+        {/* Action Buttons: 2-column on mobile, inline on desktop */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <a
             href="/ideavault-extension.zip"
             download="ideavault-extension.zip"
-            className="px-4 py-3 bg-[#111217] hover:bg-[#181920] border border-[#23242B] text-white font-sans font-medium rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+            className="px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#111217] hover:bg-[#181920] border border-[#23242B] text-white font-sans font-semibold rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider min-h-[42px]"
           >
-            <Chrome className="w-4 h-4 text-[#4F8CFF]" />
-            Chrome Extension
+            <Chrome className="w-4 h-4 text-[#4F8CFF] shrink-0" />
+            <span className="truncate">EXTENSION</span>
           </a>
 
           <button
             onClick={onAddInspiration}
-            className="px-6 py-3.5 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-2 cursor-pointer uppercase tracking-widest font-semibold"
+            className="px-3.5 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider min-h-[42px]"
           >
-            + SAVE INSPIRATION <Sparkles className="w-4 h-4 fill-current text-white" />
+            <span className="whitespace-nowrap">+ SAVE IDEA</span>
           </button>
         </div>
       </div>
 
-      {/* Filter boards strip & Search panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-center">
-        
-        {/* Navigation Collections Tabs */}
-        <div className="lg:col-span-8 flex flex-wrap items-center gap-2">
+      {/* 2. Horizontal Filter Boards Strip */}
+      <div className="mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1.5 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
           {navigationTabs.map(b => {
             const count = getBoardCount(b.id, b.name);
             const isActive = activeBoard === b.id;
@@ -226,14 +248,14 @@ export default function Dashboard({
               <button
                 key={b.id}
                 onClick={() => onBoardChange(b.id)}
-                className={`text-xs font-mono px-4 py-2.5 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${
+                className={`text-xs font-mono px-3.5 py-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer shrink-0 min-h-[38px] ${
                   isActive 
-                    ? "bg-gradient-to-r from-[#8B5CF6]/15 to-[#4F8CFF]/15 border-[#4F8CFF] text-white font-bold shadow-[0_0_15px_rgba(79,140,255,0.1)]" 
+                    ? "bg-gradient-to-r from-[#8B5CF6]/20 to-[#4F8CFF]/20 border-[#4F8CFF] text-white font-bold shadow-[0_0_15px_rgba(79,140,255,0.15)]" 
                     : "bg-[#111217] border-[#23242B] text-brand-muted hover:text-white hover:border-brand-muted/30 hover:bg-[#1a1b22]"
                 }`}
               >
-                <span className="uppercase tracking-wider">{b.name}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
+                <span className="uppercase tracking-wider whitespace-nowrap text-[11px] sm:text-xs">{b.name}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
                   isActive ? "bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white" : "bg-[#09090B] text-brand-muted"
                 }`}>
                   {count}
@@ -244,26 +266,26 @@ export default function Dashboard({
 
           {/* New collection custom adder */}
           {isAddingBoard ? (
-            <form onSubmit={handleCreateBoard} className="flex items-center gap-2">
+            <form onSubmit={handleCreateBoard} className="flex items-center gap-1.5 shrink-0">
               <input 
                 type="text"
                 required
                 autoFocus
-                placeholder="Collection name..."
+                placeholder="Collection..."
                 value={newBoardName}
                 onChange={(e) => setNewBoardName(e.target.value)}
-                className="bg-[#09090B] text-xs text-white border border-[#4F8CFF]/60 px-3 py-2 rounded-xl focus:outline-none w-36 font-mono"
+                className="bg-[#09090B] text-xs text-white border border-[#4F8CFF]/60 px-3 py-2 rounded-xl focus:outline-none w-32 font-mono min-h-[38px]"
               />
               <button 
                 type="submit"
-                className="bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-mono text-xs px-3 py-2 rounded-xl font-bold hover:opacity-95 cursor-pointer shadow-md"
+                className="bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-mono text-xs px-3 py-2 rounded-xl font-bold hover:opacity-95 cursor-pointer shadow-md min-h-[38px]"
               >
                 Add
               </button>
               <button 
                 type="button" 
                 onClick={() => setIsAddingBoard(false)}
-                className="text-xs text-brand-muted font-mono px-2 py-1 hover:text-white cursor-pointer"
+                className="text-xs text-brand-muted font-mono px-2 py-1 hover:text-white cursor-pointer min-h-[38px] flex items-center"
               >
                 Cancel
               </button>
@@ -271,49 +293,83 @@ export default function Dashboard({
           ) : (
             <button
               onClick={() => setIsAddingBoard(true)}
-              className="text-xs font-mono px-3.5 py-2.5 rounded-xl border border-[#23242B] border-dashed text-brand-muted hover:text-white hover:border-brand-muted/40 hover:bg-[#111217]/50 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="text-xs font-mono px-3.5 py-2 rounded-xl border border-[#23242B] border-dashed text-brand-muted hover:text-white hover:border-brand-muted/40 hover:bg-[#111217]/50 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 min-h-[38px] whitespace-nowrap"
             >
-              <Plus className="w-3.5 h-3.5" /> New Collection
+              <Plus className="w-3.5 h-3.5" /> <span className="uppercase text-[11px] sm:text-xs">Collection</span>
             </button>
           )}
         </div>
-
-        {/* Dynamic Search Box */}
-        <div className="lg:col-span-4 relative">
-          <input
-            type="text"
-            placeholder="Search vault (e.g. Bauhaus, retention)..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-[#111217] border border-[#23242B] rounded-xl pl-10 pr-10 py-3 text-xs text-white placeholder-brand-muted/50 focus:outline-none focus:border-[#4F8CFF]/50 transition-colors"
-          />
-          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-brand-muted" />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-3 top-3 text-[9px] font-mono text-brand-muted bg-[#09090B] px-2 py-1 rounded hover:text-white border border-[#23242B] transition-colors"
-            >
-              CLEAR
-            </button>
-          )}
-        </div>
-
       </div>
 
-      {/* Main locked results header */}
-      <div className="flex items-center justify-between border-b border-[#23242B] pb-4 mb-6">
-        <span className="text-[10px] font-mono text-brand-muted">
+      {/* 3. Search Bar (Full width, placed below filters) */}
+      <div className="relative mb-4 sm:mb-6">
+        <input
+          type="text"
+          placeholder="Search vault (e.g. Bauhaus, retention)..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full bg-[#111217] border border-[#23242B] rounded-xl pl-10 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm text-white placeholder-brand-muted/50 focus:outline-none focus:border-[#4F8CFF]/50 transition-colors min-h-[42px]"
+        />
+        <Search className="absolute left-3.5 top-3 sm:top-3.5 w-4 h-4 text-brand-muted" />
+        {searchQuery && (
+          <button
+            onClick={() => onSearchChange("")}
+            className="absolute right-2.5 top-2 sm:top-2.5 text-[9px] font-mono text-brand-muted bg-[#09090B] px-2 py-1 rounded-lg hover:text-white border border-[#23242B] transition-colors cursor-pointer"
+          >
+            CLEAR
+          </button>
+        )}
+      </div>
+
+      {/* 4. Idea Count & Sorting Controls Bar */}
+      <div className="flex items-center justify-between pb-3 sm:pb-4 mb-4 sm:mb-6 border-b border-[#23242B] text-[11px] font-mono text-brand-muted">
+        <span>
           Showing {filteredInspirations.length} of {inspirations.length} items
         </span>
+
+        {/* Sort Controls */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSortMenu(prev => !prev)}
+            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-[#111217]"
+          >
+            <span className="capitalize">Sort: {sortBy === "latest" ? "Latest" : sortBy === "oldest" ? "Oldest" : sortBy === "favorites" ? "Favorites" : "Title"}</span>
+            <span className="text-[9px]">▾</span>
+          </button>
+
+          {showSortMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-[#111217] border border-[#23242B] rounded-xl shadow-xl z-30 py-1 overflow-hidden">
+              {[
+                { id: "latest", label: "Latest" },
+                { id: "oldest", label: "Oldest" },
+                { id: "favorites", label: "Favorites" },
+                { id: "title", label: "Title (A-Z)" }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setSortBy(item.id as any);
+                    setShowSortMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${
+                    sortBy === item.id ? "text-[#4F8CFF] bg-[#4F8CFF]/10 font-bold" : "text-brand-muted hover:text-white hover:bg-[#1a1b22]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Grid or Masonry List */}
+      {/* 5. Mobile 2-Column Grid & Desktop Responsive Gallery */}
       {filteredInspirations.length === 0 ? (
         <motion.div 
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="bg-[#111217] border border-[#23242B] rounded-2xl py-12 px-8 flex flex-col items-center justify-center text-center shadow-xl w-full max-w-xl mx-auto my-8"
+          className="bg-[#111217] border border-[#23242B] rounded-2xl py-12 px-6 sm:px-8 flex flex-col items-center justify-center text-center shadow-xl w-full max-w-xl mx-auto my-8"
         >
           <Folder className="w-8 h-8 text-brand-muted/70 mb-4 stroke-[1.25]" />
           <h3 className="font-sans font-medium text-lg text-white mb-2">
@@ -330,70 +386,21 @@ export default function Dashboard({
           </button>
         </motion.div>
       ) : (cleanBoardName.toLowerCase().includes("pinterest") || activeBoard.toLowerCase().includes("pinterest")) ? (
-        /* PINTEREST MASONRY GALLERY */
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+        /* PINTEREST MASONRY (Columns on Desktop, 2-column Grid on Mobile) */
+        <div className="grid grid-cols-2 md:columns-2 lg:columns-3 xl:columns-4 gap-3 sm:gap-4 md:gap-6 md:space-y-6 md:block">
           {filteredInspirations.map(insp => (
-            <motion.div
-              key={insp.id}
-              layout
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.25 }}
-              className="break-inside-avoid bg-[#111217] rounded-2xl border border-[#23242B] hover:border-[#3a3b45] hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer flex flex-col group mb-6"
-              onClick={() => onViewInspiration(insp)}
-            >
-              {/* Large Image Preview (main focus) */}
-              {insp.imageUrl ? (
-                <div className="w-full overflow-hidden bg-[#09090B]">
-                  <img
-                    referrerPolicy="no-referrer"
-                    src={insp.imageUrl}
-                    alt={insp.title}
-                    className="w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-48 bg-[#09090B] border-b border-[#23242B] flex flex-col items-center justify-center p-6 text-center text-brand-muted">
-                  <div className="w-10 h-10 rounded-full bg-[#111217] border border-[#23242B] flex items-center justify-center mb-2">
-                    <Sparkles className="w-4 h-4 text-rose-400" />
-                  </div>
-                  <span className="text-xs font-mono uppercase tracking-wider font-semibold text-brand-muted/70">
-                    No Preview Available
-                  </span>
-                </div>
-              )}
-
-              {/* Bottom Card Content */}
-              <div className="p-4 flex flex-col justify-between flex-1">
-                <div>
-                  {/* Title */}
-                  <h3 className="font-sans font-semibold text-sm text-white group-hover:text-[#4F8CFF] transition-colors leading-snug line-clamp-2">
-                    {insp.title}
-                  </h3>
-
-                  {/* Description: 2 lines max */}
-                  {(insp.notes || insp.voiceTranscript) && (
-                    <p className="mt-2 text-xs text-brand-muted/80 line-clamp-2 leading-relaxed font-sans">
-                      {insp.notes || insp.voiceTranscript}
-                    </p>
-                  )}
-                </div>
-
-                {/* Small Footer */}
-                <div className="mt-4 pt-3 border-t border-[#23242B]/40 flex items-center justify-between text-[10px] font-mono text-brand-muted">
-                  <span>{insp.createdAt}</span>
-                  <span className="px-2 py-0.5 rounded-md bg-rose-950/40 text-rose-400 border border-rose-900/40 font-bold uppercase tracking-wider flex items-center gap-1">
-                    📌 Pinterest
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+            <div key={insp.id} className="md:break-inside-avoid md:mb-6">
+              <InspirationCard
+                inspiration={insp}
+                onToggleFavorite={onToggleFavorite}
+                onViewInspiration={onViewInspiration}
+              />
+            </div>
           ))}
         </div>
       ) : (
-        /* STANDARD GRID FOR ALL COLLECTIONS */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        /* STANDARD 2-COLUMN MOBILE GRID / 3-4 COLUMN DESKTOP GRID */
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-6">
           {filteredInspirations.map(insp => (
             <InspirationCard
               key={insp.id}

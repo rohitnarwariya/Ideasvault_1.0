@@ -6,6 +6,7 @@ import {
   Square, Layers, FileText
 } from "lucide-react";
 import { Inspiration } from "../types";
+import { DEFAULT_FALLBACK_IMAGE, isInvalidOrInstagramPlaceholder } from "./InspirationCard";
 
 interface AnalysisPageProps {
   inspiration: Inspiration;
@@ -239,21 +240,21 @@ export default function AnalysisPage({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -15 }}
         transition={{ duration: 0.3 }}
-        className="max-w-4xl mx-auto px-6 py-8 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30"
+        className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 text-white font-sans selection:bg-[#4F8CFF]/30"
       >
         {/* Top Bar Navigation & Actions */}
-        <div className="flex items-center justify-between pb-6 mb-8 border-b border-[#23242B]">
+        <div className="flex items-center justify-between pb-5 sm:pb-6 mb-6 sm:mb-8 border-b border-[#23242B]">
           <button
             onClick={onBack}
-            className="text-xs font-mono uppercase tracking-wider text-brand-muted hover:text-white px-3.5 py-2 rounded-xl bg-[#111217] border border-[#23242B] flex items-center gap-2 transition-all cursor-pointer font-bold"
+            className="text-xs font-mono uppercase tracking-wider text-brand-muted hover:text-white px-3.5 py-2.5 rounded-xl bg-[#111217] border border-[#23242B] flex items-center gap-2 transition-all cursor-pointer font-bold min-h-[40px]"
           >
             <ArrowLeft className="w-4 h-4 text-[#4F8CFF]" /> Back to Vault
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               onClick={() => onToggleFavorite(inspiration.id)}
-              className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer min-w-[40px] min-h-[40px] ${
                 inspiration.isFavorite
                   ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-500"
                   : "bg-[#111217] border-[#23242B] text-brand-muted hover:text-white"
@@ -265,13 +266,13 @@ export default function AnalysisPage({
             {showDeleteConfirm ? (
               <div className="flex items-center gap-2 bg-[#1b1c22]/90 border border-red-900/40 rounded-xl p-1">
                 <span className="text-[10px] font-mono uppercase text-red-400 px-2 font-bold">Delete pin?</span>
-                <button onClick={() => setShowDeleteConfirm(false)} className="px-2.5 py-1 text-[10px] font-mono text-brand-muted">Cancel</button>
-                <button onClick={() => { onDelete(inspiration.id); onBack(); }} className="px-2.5 py-1 text-[10px] font-mono bg-red-600 text-white rounded font-bold">Confirm</button>
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-2.5 py-1 text-[10px] font-mono text-brand-muted min-h-[32px]">Cancel</button>
+                <button onClick={() => { onDelete(inspiration.id); onBack(); }} className="px-2.5 py-1 text-[10px] font-mono bg-red-600 text-white rounded font-bold min-h-[32px]">Confirm</button>
               </div>
             ) : (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-10 h-10 rounded-xl bg-red-950/10 border border-red-900/30 text-red-400 flex items-center justify-center hover:bg-red-950/30 transition-all cursor-pointer"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-950/10 border border-red-900/30 text-red-400 flex items-center justify-center hover:bg-red-950/30 transition-all cursor-pointer min-w-[40px] min-h-[40px]"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -280,29 +281,28 @@ export default function AnalysisPage({
         </div>
 
         {/* Main Pinterest Visual Detail Card */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           
           {/* TOP: Large Image */}
-          {inspiration.imageUrl ? (
-            <div className="w-full rounded-3xl overflow-hidden border border-[#23242B] bg-[#09090B] shadow-2xl relative max-h-[70vh] flex items-center justify-center">
-              <img
-                referrerPolicy="no-referrer"
-                src={inspiration.imageUrl}
-                alt={inspiration.title}
-                className="w-full h-auto max-h-[70vh] object-contain cursor-zoom-in"
-                onClick={() => setIsLightboxOpen(true)}
-              />
-            </div>
-          ) : (
-            <div className="w-full h-64 rounded-3xl border border-[#23242B] bg-[#09090B] flex flex-col items-center justify-center p-8 text-center text-brand-muted">
-              <div className="w-12 h-12 rounded-full bg-[#111217] border border-[#23242B] flex items-center justify-center mb-3">
-                <Sparkles className="w-5 h-5 text-rose-400" />
+          {(() => {
+            const raw = inspiration.imageUrl;
+            const valid = raw && !isInvalidOrInstagramPlaceholder(raw) ? raw : DEFAULT_FALLBACK_IMAGE;
+            return (
+              <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#23242B] bg-[#09090B] shadow-2xl relative max-h-[70vh] flex items-center justify-center">
+                <img
+                  referrerPolicy="no-referrer"
+                  src={valid}
+                  alt={inspiration.title}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                  }}
+                  className="w-full h-auto max-h-[70vh] object-contain cursor-zoom-in"
+                  onClick={() => setIsLightboxOpen(true)}
+                />
               </div>
-              <span className="text-sm font-mono uppercase tracking-wider font-semibold text-brand-muted">
-                No Preview Available
-              </span>
-            </div>
-          )}
+            );
+          })()}
 
           {/* BELOW: User Title */}
           <div className="space-y-4">
@@ -312,17 +312,17 @@ export default function AnalysisPage({
                   type="text"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="bg-[#111217] text-white font-sans font-semibold text-2xl md:text-3xl tracking-tight p-3.5 rounded-2xl border border-[#4F8CFF] focus:outline-none flex-1 font-sans"
+                  className="bg-[#111217] text-white font-sans font-semibold text-xl sm:text-2xl md:text-3xl tracking-tight p-3 rounded-xl border border-[#4F8CFF] focus:outline-none flex-1 font-sans min-h-[44px]"
                   onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
                   onBlur={handleSaveTitle}
                   autoFocus
                 />
               </div>
             ) : (
-              <div className="group relative flex items-start justify-between gap-4">
+              <div className="group relative flex items-start justify-between gap-3 sm:gap-4">
                 <div>
                   <h1 
-                    className="font-sans font-semibold text-3xl md:text-4xl tracking-tight text-white leading-tight cursor-pointer"
+                    className="font-sans font-semibold text-2xl sm:text-3xl md:text-4xl tracking-tight text-white leading-tight cursor-pointer"
                     onClick={() => setIsEditingTitle(true)}
                   >
                     {inspiration.title}
@@ -335,7 +335,7 @@ export default function AnalysisPage({
                 </div>
                 <button
                   onClick={() => setIsEditingTitle(true)}
-                  className="opacity-0 group-hover:opacity-100 text-[#4F8CFF] hover:text-white p-2 rounded-lg bg-[#111217] border border-[#23242B] transition-opacity cursor-pointer flex-shrink-0"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-[#4F8CFF] hover:text-white p-2 rounded-lg bg-[#111217] border border-[#23242B] transition-opacity cursor-pointer flex-shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
@@ -407,7 +407,7 @@ export default function AnalysisPage({
         </div>
 
         {/* Lightbox Modal */}
-        {isLightboxOpen && inspiration.imageUrl && (
+        {isLightboxOpen && (
           <div 
             className="fixed inset-0 bg-[#09090B]/90 backdrop-blur-md z-50 flex items-center justify-center p-4 cursor-pointer"
             onClick={() => setIsLightboxOpen(false)}
@@ -415,7 +415,11 @@ export default function AnalysisPage({
             <div className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-[#23242B] shadow-2xl">
               <img 
                 referrerPolicy="no-referrer" 
-                src={inspiration.imageUrl} 
+                src={!isInvalidOrInstagramPlaceholder(inspiration.imageUrl) ? inspiration.imageUrl : DEFAULT_FALLBACK_IMAGE} 
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                }}
                 className="max-w-full max-h-[85vh] object-contain" 
                 alt="Full size preview" 
               />
@@ -434,21 +438,21 @@ export default function AnalysisPage({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="max-w-7xl mx-auto px-6 py-12 relative z-10 font-sans text-white selection:bg-[#4F8CFF]/30"
+      className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12 relative z-10 font-sans text-white selection:bg-[#4F8CFF]/30"
     >
       {/* Header controls bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#23242B] pb-6 mb-8">
+      <div className="flex items-center justify-between gap-3 border-b border-[#23242B] pb-5 sm:pb-6 mb-6 sm:mb-8">
         <button 
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-xs font-mono tracking-[0.2em] text-[#4F8CFF] font-bold hover:text-white transition-colors cursor-pointer uppercase py-2.5 px-4 bg-[#111217]/50 hover:bg-[#111217] border border-[#23242B] rounded-xl hover:border-[#4F8CFF]/40"
+          className="inline-flex items-center gap-2 text-xs font-mono tracking-[0.2em] text-[#4F8CFF] font-bold hover:text-white transition-colors cursor-pointer uppercase py-2.5 px-3.5 sm:px-4 bg-[#111217]/50 hover:bg-[#111217] border border-[#23242B] rounded-xl hover:border-[#4F8CFF]/40 min-h-[40px]"
         >
-          <ArrowLeft className="w-4 h-4" /> BACK TO VAULT
+          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">BACK TO VAULT</span><span className="sm:hidden">VAULT</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => onToggleFavorite(inspiration.id)}
-            className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer min-w-[40px] min-h-[40px] ${
               inspiration.isFavorite 
                 ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-500" 
                 : "bg-[#111217] border-[#23242B] text-brand-muted hover:text-white hover:border-brand-muted/30"
@@ -463,7 +467,7 @@ export default function AnalysisPage({
               <span className="text-[10px] font-mono uppercase text-red-400 px-2 font-bold">Are you sure?</span>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase bg-[#111217] hover:bg-[#23242B] text-brand-muted hover:text-white transition-all cursor-pointer font-bold border border-[#23242B]"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase bg-[#111217] hover:bg-[#23242B] text-brand-muted hover:text-white transition-all cursor-pointer font-bold border border-[#23242B] min-h-[32px]"
               >
                 Cancel
               </button>
@@ -472,7 +476,7 @@ export default function AnalysisPage({
                   onDelete(inspiration.id);
                   onBack();
                 }}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase bg-red-600 hover:bg-red-700 text-white font-bold transition-all cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase bg-red-600 hover:bg-red-700 text-white font-bold transition-all cursor-pointer min-h-[32px]"
               >
                 Delete
               </button>
@@ -480,7 +484,7 @@ export default function AnalysisPage({
           ) : (
             <button 
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-11 h-11 rounded-xl bg-red-950/10 border border-red-900/30 text-red-400 flex items-center justify-center hover:bg-red-950/30 hover:border-red-900/50 transition-all cursor-pointer"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-950/10 border border-red-900/30 text-red-400 flex items-center justify-center hover:bg-red-950/30 hover:border-red-900/50 transition-all cursor-pointer min-w-[40px] min-h-[40px]"
               title="Delete inspiration"
             >
               <Trash2 className="w-4 h-4" />
@@ -489,10 +493,10 @@ export default function AnalysisPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-12 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 lg:gap-12 mt-4">
         
         {/* LEFT COLUMN: ~70% width */}
-        <div className="lg:col-span-7 space-y-10">
+        <div className="lg:col-span-7 space-y-8 sm:space-y-10">
           
           {/* TITLE */}
           <div className="space-y-4">
@@ -502,7 +506,7 @@ export default function AnalysisPage({
                   type="text" 
                   value={editedTitle} 
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="bg-[#111217] text-white font-sans font-semibold text-2xl md:text-3xl tracking-tight p-3 rounded-xl border border-[#4F8CFF] focus:outline-none flex-1 font-sans"
+                  className="bg-[#111217] text-white font-sans font-semibold text-xl sm:text-2xl md:text-3xl tracking-tight p-3 rounded-xl border border-[#4F8CFF] focus:outline-none flex-1 font-sans min-h-[44px]"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSaveTitle();
                   }}
@@ -511,14 +515,14 @@ export default function AnalysisPage({
                 />
               </div>
             ) : (
-              <div className="group relative flex items-start justify-between gap-4">
+              <div className="group relative flex items-start justify-between gap-3 sm:gap-4">
                 <div className="flex-1">
-                  <h1 className="font-sans font-semibold text-3xl md:text-4xl tracking-tight text-white leading-tight cursor-pointer" onClick={() => setIsEditingTitle(true)}>
+                  <h1 className="font-sans font-semibold text-2xl sm:text-3xl md:text-4xl tracking-tight text-white leading-tight cursor-pointer" onClick={() => setIsEditingTitle(true)}>
                     {inspiration.title}
                   </h1>
                   
                   {/* Platform • Date Saved (Instead of duplicate badges/cards) */}
-                  <div className="flex items-center gap-2 mt-3 text-xs font-mono text-brand-muted uppercase tracking-wider font-bold">
+                  <div className="flex items-center gap-2 mt-2 sm:mt-3 text-xs font-mono text-brand-muted uppercase tracking-wider font-bold">
                     <span className="text-[#4F8CFF]">{inspiration.platform}</span>
                     <span>•</span>
                     <span>{inspiration.createdAt}</span>
@@ -527,7 +531,7 @@ export default function AnalysisPage({
                 
                 <button 
                   onClick={() => setIsEditingTitle(true)}
-                  className="opacity-0 group-hover:opacity-100 text-[#4F8CFF] hover:text-white p-2 rounded-lg bg-[#111217] border border-[#23242B] transition-opacity duration-200 cursor-pointer flex-shrink-0"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-[#4F8CFF] hover:text-white p-2 rounded-lg bg-[#111217] border border-[#23242B] transition-opacity duration-200 cursor-pointer flex-shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
                   title="Edit title"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -595,7 +599,11 @@ export default function AnalysisPage({
               >
                 <img 
                   referrerPolicy="no-referrer" 
-                  src={inspiration.imageUrl} 
+                  src={!isInvalidOrInstagramPlaceholder(inspiration.imageUrl) ? inspiration.imageUrl : DEFAULT_FALLBACK_IMAGE} 
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                  }}
                   className="w-full h-auto object-cover max-h-96" 
                   alt="inspiration screenshot" 
                 />

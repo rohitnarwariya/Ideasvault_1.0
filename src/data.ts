@@ -33,7 +33,7 @@ export const INITIAL_INSPIRATIONS: Inspiration[] = [
     board: "📸 Instagram",
     createdAt: "Jul 19, 2026",
     isFavorite: false,
-    imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000&auto=format&fit=crop",
     aiStatus: "ready",
     aiAnalysis: {
       creativeInsight: "A masterclass in rapid focal alignment and directional flow. By accelerating camera whips at the transition edge and keeping subjects framed in the exact visual quadrant, this style provides flawless visual continuation.",

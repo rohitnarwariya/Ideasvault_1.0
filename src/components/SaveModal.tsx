@@ -397,7 +397,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
   const displayPlatform = getDisplayPlatform(url);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-[#09090B]/85 backdrop-blur-md selection:bg-[#4F8CFF]/30">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto bg-[#09090B]/85 backdrop-blur-md selection:bg-[#4F8CFF]/30">
       
       {/* Dynamic Saving loading pipeline overlay */}
       <AnimatePresence>
@@ -443,28 +443,32 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
       </AnimatePresence>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#111217] border border-[#23242B] rounded-3xl w-full max-w-[80%] shadow-2xl overflow-hidden relative font-sans"
+        initial={{ opacity: 0, y: 40, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.98 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-[#111217] border-t sm:border border-[#23242B] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[80%] max-h-[92vh] sm:max-h-[85vh] shadow-2xl overflow-hidden relative font-sans flex flex-col"
       >
+        {/* iOS Drag Handle on mobile */}
+        <div className="sm:hidden w-12 h-1 bg-brand-muted/30 rounded-full mx-auto mt-2.5 shrink-0" />
+
         {/* Header */}
-        <div className="px-8 py-6 border-b border-[#23242B] flex items-center justify-between">
+        <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-[#23242B] flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-3xl font-display font-normal text-white uppercase tracking-wide flex items-center gap-2.5">
-              <Sparkles className="w-5 h-5 text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6] fill-current" /> SAVE INSPIRATION
+            <h2 className="text-2xl sm:text-3xl font-display font-normal text-white uppercase tracking-wide flex items-center gap-2">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-transparent bg-clip-text bg-gradient-to-r from-[#4F8CFF] to-[#8B5CF6] fill-current" /> SAVE INSPIRATION
             </h2>
-            <p className="text-[11px] text-brand-muted mt-1.5 font-medium leading-relaxed">Capture the idea before you forget why it mattered.</p>
+            <p className="text-[11px] text-brand-muted mt-1 font-medium leading-tight">Capture the idea before you forget why it mattered.</p>
           </div>
           <button 
             onClick={onClose}
-            className="text-brand-muted hover:text-white p-1 rounded-lg border border-[#23242B] hover:border-brand-muted/40 transition-all cursor-pointer"
+            className="text-brand-muted hover:text-white p-2 sm:p-1.5 rounded-xl border border-[#23242B] hover:border-brand-muted/40 transition-all cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-5 sm:space-y-6 overflow-y-auto overscroll-contain flex-1 pb-safe">
           
           {/* 1. Inspiration Title */}
           <div>
@@ -476,7 +480,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder='Example: "Cinematic Slow Motion Lighting"'
-              className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3.5 text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 font-sans font-medium"
+              className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 sm:py-3.5 text-base sm:text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 font-sans font-medium min-h-[44px]"
             />
             <p className="text-[10px] text-brand-muted mt-1.5 font-sans font-normal leading-relaxed">
               Optional. If left empty, IdeaVault will generate a short descriptive title from your notes or voice memo.
@@ -493,22 +497,22 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
             </div>
             
             <textarea
-              rows={4}
+              rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder='Example: "I love how the creator uses slow camera movement and soft lighting. I want to recreate this mood in my next video."'
-              className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3.5 text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 resize-none font-sans leading-relaxed font-medium"
+              className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 sm:py-3.5 text-base sm:text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 resize-none font-sans leading-relaxed font-medium"
             />
 
             {/* Quick tag attachments */}
-            <div className="flex flex-wrap gap-2 mt-2.5">
-              <span className="text-[10px] font-mono text-brand-muted py-1 flex items-center font-bold uppercase tracking-wider">Add context tags:</span>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+              <span className="text-[10px] font-mono text-brand-muted py-1 flex items-center font-bold uppercase tracking-wider">Tags:</span>
               {["+Hooks", "+Aesthetic Spacing", "+B-Roll Angle", "+Copywriting", "+Interactive Widget"].map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => handleAddQuickTag(tag)}
-                  className="text-[9px] font-mono px-3 py-1.5 rounded-full bg-[#09090B] border border-[#23242B] hover:border-[#4F8CFF]/50 text-brand-muted hover:text-white transition-all cursor-pointer font-bold uppercase tracking-wider"
+                  className="text-[9px] font-mono px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#09090B] border border-[#23242B] hover:border-[#4F8CFF]/50 text-brand-muted hover:text-white transition-all cursor-pointer font-bold uppercase tracking-wider min-h-[32px] flex items-center"
                 >
                   {tag}
                 </button>
@@ -517,10 +521,10 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
           </div>
 
           {/* 3. Voice Memo */}
-          <div className={`rounded-xl p-5 border transition-all ${
+          <div className={`rounded-xl p-4 sm:p-5 border transition-all ${
             isRecording ? "bg-red-950/10 border-red-900/40" : "bg-[#09090B] border-[#23242B]"
           }`}>
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <span className="text-[10px] font-mono uppercase tracking-wider text-white font-bold">VOICE MEMO</span>
               <p className="text-[11px] text-brand-muted mt-1 leading-relaxed font-medium">
                 Prefer speaking instead of typing? Record a short voice note and we'll place the transcript into your notes automatically.
@@ -528,19 +532,19 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
             </div>
 
             {isTranscribing ? (
-              <div className="flex items-center gap-2 bg-[#111217] border border-[#23242B] px-3 py-2.5 rounded-lg justify-center">
+              <div className="flex items-center gap-2 bg-[#111217] border border-[#23242B] px-3 py-3 rounded-lg justify-center min-h-[44px]">
                 <div className="w-3.5 h-3.5 border-2 border-[#4F8CFF]/20 border-t-[#4F8CFF] rounded-full animate-spin" />
                 <span className="text-[10px] font-mono text-[#4F8CFF] font-bold uppercase tracking-wider">TRANSCRIBING AUDIO...</span>
               </div>
             ) : isRecording ? (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-[44px]">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                  <span className="text-[10px] font-mono text-red-400 font-bold">RECORDING: 0:{recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds}</span>
+                  <span className="text-[10px] font-mono text-red-400 font-bold">REC: 0:{recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds}</span>
                 </div>
                 
                 {/* Glowing simple waveform */}
-                <div className="flex items-end gap-0.5 h-4 w-16">
+                <div className="flex items-end gap-0.5 h-4 w-12 sm:w-16">
                   <div className="flex-1 bg-red-400 h-2 animate-bounce" style={{ animationDelay: "0.1s" }} />
                   <div className="flex-1 bg-red-400 h-4 animate-bounce" style={{ animationDelay: "0.3s" }} />
                   <div className="flex-1 bg-red-400 h-1 animate-bounce" style={{ animationDelay: "0.2s" }} />
@@ -550,7 +554,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                 <button
                   type="button"
                   onClick={handleToggleVoiceRecord}
-                  className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] uppercase font-bold cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] uppercase font-bold cursor-pointer min-h-[36px]"
                 >
                   Stop
                 </button>
@@ -560,7 +564,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                 <button
                   type="button"
                   onClick={handleToggleVoiceRecord}
-                  className="w-full bg-[#111217] hover:bg-[#09090B] border border-[#23242B] hover:border-[#4F8CFF]/50 text-white font-mono text-[10px] tracking-widest py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold uppercase"
+                  className="w-full bg-[#111217] hover:bg-[#09090B] border border-[#23242B] hover:border-[#4F8CFF]/50 text-white font-mono text-[10px] tracking-widest py-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold uppercase min-h-[44px]"
                 >
                   <Mic className="w-3.5 h-3.5 text-[#4F8CFF]" /> Record Voice Memo
                 </button>
@@ -584,13 +588,13 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Paste any YouTube, Instagram, X, Pinterest, website, or article link."
-                className="w-full bg-[#09090B] border border-[#23242B] rounded-xl pl-10 pr-24 py-3.5 text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 font-mono"
+                className="w-full bg-[#09090B] border border-[#23242B] rounded-xl pl-10 pr-24 py-3 sm:py-3.5 text-base sm:text-xs text-white placeholder-brand-muted/40 focus:outline-none focus:border-[#4F8CFF]/60 font-mono min-h-[44px]"
               />
               <Link2 className="absolute left-3.5 top-3.5 w-4 h-4 text-brand-muted" />
               
               {/* Live Platform Indicator badge */}
-              <div className="absolute right-3.5 top-3">
-                <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-mono border uppercase tracking-wider font-bold ${
+              <div className="absolute right-2.5 top-2.5 sm:right-3.5 sm:top-3">
+                <span className={`px-2 py-0.5 rounded-full text-[8px] font-mono border uppercase tracking-wider font-bold ${
                   displayPlatform === "YOUTUBE" ? "bg-red-950/60 text-red-400 border-red-900/40" :
                   displayPlatform === "INSTAGRAM" ? "bg-[#4F8CFF]/10 text-[#4F8CFF] border-[#4F8CFF]/25" :
                   displayPlatform === "PINTEREST" ? "bg-rose-950/60 text-rose-400 border-rose-900/40" :
@@ -615,7 +619,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
             )}
             {isFetchingPinterest && (
               <p className="text-[10px] text-rose-400 font-mono mt-1.5 flex items-center gap-1.5 animate-pulse font-semibold">
-                <Sparkles className="w-3 h-3" /> Fetching Pinterest Open Graph preview & details...
+                <Sparkles className="w-3 h-3" /> Fetching preview image & details...
               </p>
             )}
           </div>
@@ -631,7 +635,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
             <div 
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="bg-[#09090B] rounded-xl border border-dashed border-[#23242B] p-5 text-center flex flex-col justify-center items-center group cursor-pointer hover:border-[#4F8CFF]/40 transition-all duration-300 min-h-[120px]"
+              className="bg-[#09090B] rounded-xl border border-dashed border-[#23242B] p-4 sm:p-5 text-center flex flex-col justify-center items-center group cursor-pointer hover:border-[#4F8CFF]/40 transition-all duration-300 min-h-[100px] sm:min-h-[120px]"
               onClick={() => fileInputRef.current?.click()}
             >
               <input 
@@ -651,16 +655,16 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                       e.stopPropagation();
                       setImageFile(null);
                     }}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-[#09090B] border border-[#23242B] hover:bg-red-950/40 text-red-400 cursor-pointer"
+                    className="absolute top-1 right-1 p-1.5 rounded-full bg-[#09090B] border border-[#23242B] hover:bg-red-950/40 text-red-400 cursor-pointer min-w-[32px] min-h-[32px] flex items-center justify-center"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ) : (
                 <>
-                  <Upload className="w-6 h-6 text-brand-muted group-hover:text-[#4F8CFF] transition-colors mb-2" />
+                  <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-brand-muted group-hover:text-[#4F8CFF] transition-colors mb-1.5" />
                   <span className="text-[10px] font-mono text-white font-bold uppercase tracking-wider">Attach Reference Image</span>
-                  <p className="text-[8px] text-brand-muted mt-1 uppercase font-bold tracking-wider">DRAG & DROP OR TAP TO SELECT</p>
+                  <p className="text-[8px] text-brand-muted mt-0.5 uppercase font-bold tracking-wider">DRAG & DROP OR TAP TO SELECT</p>
                 </>
               )}
             </div>
@@ -678,7 +682,7 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
                   setSelectedBoard(e.target.value);
                   setHasManuallySelectedBoard(true);
                 }}
-                className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#4F8CFF]/60 appearance-none font-sans font-medium uppercase"
+                className="w-full bg-[#09090B] border border-[#23242B] rounded-xl px-4 py-3 text-base sm:text-xs text-white focus:outline-none focus:border-[#4F8CFF]/60 appearance-none font-sans font-medium uppercase min-h-[44px]"
               >
                 {localBoards.map(board => (
                   <option key={board} value={board}>
@@ -691,17 +695,17 @@ export default function SaveModal({ onClose, onSave, boards }: SaveModalProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-4 pt-5 border-t border-[#23242B]">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 pt-4 sm:pt-5 border-t border-[#23242B]">
             <button
               type="button"
               onClick={onClose}
-              className="text-xs font-mono tracking-widest text-brand-muted hover:text-white px-4 py-2 transition-colors cursor-pointer font-bold uppercase"
+              className="text-xs font-mono tracking-widest text-brand-muted hover:text-white px-4 py-3 sm:py-2 transition-colors cursor-pointer font-bold uppercase text-center min-h-[44px] flex items-center justify-center"
             >
               CANCEL
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold text-xs tracking-widest px-6 py-3.5 rounded-xl flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] cursor-pointer uppercase font-semibold"
+              className="bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold text-xs tracking-widest px-6 py-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer uppercase min-h-[44px]"
             >
               SAVE TO VAULT <CheckCircle className="w-4 h-4" />
             </button>

@@ -130,6 +130,20 @@ export default async function handler(req: Request, res: Response) {
       }
     }
 
+    const lowerImg = resolvedImage.toLowerCase();
+    if (
+      lowerImg.includes("static.cdninstagram.com") ||
+      lowerImg.includes("instagram.com/static") ||
+      lowerImg.includes("instagram.com/rsrc.php") ||
+      lowerImg.includes("netflix") ||
+      (targetUrl.includes("instagram.com") && (lowerImg.includes("logo") || lowerImg.includes("glyph") || lowerImg.includes("icon") || lowerImg.includes("favicon") || lowerImg.includes("brand")))
+    ) {
+      return res.status(200).json({
+        success: false,
+        previewImage: null,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       previewImage: resolvedImage,

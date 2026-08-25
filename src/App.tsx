@@ -11,7 +11,7 @@ import Dashboard from "./components/Dashboard";
 import AnalysisPage from "./components/AnalysisPage";
 import SaveModal from "./components/SaveModal";
 import ProfileSettings, { Profile } from "./components/ProfileSettings";
-import { Lock, Sparkles, LogOut, ArrowRight, ShieldCheck, X, ChevronLeft, Plus, Check } from "lucide-react";
+import { Lock, Sparkles, LogOut, ArrowRight, ShieldCheck, X, ChevronLeft, Plus, Check, LayoutGrid, User } from "lucide-react";
 
 export default function App() {
   const [view, setView] = useState<"landing" | "dashboard" | "analysis" | "profile">("landing");
@@ -1125,14 +1125,14 @@ export default function App() {
 
       {/* Dynamic top bar in dashboard */}
       {view !== "landing" && (
-        <header className="border-b border-brand-border bg-[#09090B]/80 backdrop-blur-md sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <header className="border-b border-brand-border bg-[#09090B]/90 backdrop-blur-xl sticky top-0 z-40 pt-safe">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
             <div 
               onClick={() => {
                 setView("landing");
                 setSelectedInspiration(null);
               }}
-              className="flex items-center gap-2.5 cursor-pointer group"
+              className="flex items-center gap-2.5 cursor-pointer group min-h-[44px] py-1"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-[#4F8CFF] to-[#8B5CF6] rounded-lg flex items-center justify-center shadow-lg shadow-brand-primary/20 group-hover:scale-105 transition-transform">
                 <Lock className="w-4 h-4 text-white" />
@@ -1154,26 +1154,26 @@ export default function App() {
               const initials = getInitials(usernameDisplay);
 
               return (
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-2.5 sm:gap-5">
                   {/* Clickable user profile info block */}
                   <div 
                     onClick={() => setView("profile")}
-                    className="flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all group select-none"
+                    className="flex items-center gap-2.5 sm:gap-3 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all group select-none min-h-[44px] py-1"
                     title="Open Profile Settings"
                   >
                     {user.avatar ? (
                       <img 
                         referrerPolicy="no-referrer" 
                         src={user.avatar} 
-                        className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-[#4F8CFF] object-cover transition-colors" 
+                        className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-transparent group-hover:border-[#4F8CFF] object-cover transition-colors" 
                         alt="avatar" 
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4F8CFF] to-[#8B5CF6] flex items-center justify-center font-display font-bold text-base text-white border-2 border-transparent group-hover:border-white/20 transition-all shadow-inner">
+                      <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#4F8CFF] to-[#8B5CF6] flex items-center justify-center font-display font-bold text-xs sm:text-base text-white border-2 border-transparent group-hover:border-white/20 transition-all shadow-inner">
                         {initials}
                       </div>
                     )}
-                    <div className="text-left hidden sm:block">
+                    <div className="text-left hidden md:block">
                       <span className={`text-sm font-semibold block leading-tight group-hover:text-[#4F8CFF] transition-colors ${isUsernameMissing ? "text-yellow-400 font-bold" : "text-white"}`}>
                         {usernameDisplay}
                       </span>
@@ -1184,9 +1184,11 @@ export default function App() {
                   {/* Proper bordered Logout button */}
                   <button 
                     onClick={handleLogout}
-                    className="px-4 py-2 text-xs font-semibold text-brand-muted hover:text-red-400 bg-[#111217] border border-[#23242B] hover:border-red-900/35 rounded-xl transition-all active:scale-[0.98] cursor-pointer"
+                    className="px-3 sm:px-4 py-2 text-xs font-semibold text-brand-muted hover:text-red-400 bg-[#111217] border border-[#23242B] hover:border-red-900/35 rounded-xl transition-all active:scale-[0.98] cursor-pointer min-h-[38px] flex items-center justify-center gap-1.5"
+                    title="Log out"
                   >
-                    Logout
+                    <LogOut className="w-3.5 h-3.5 sm:hidden" />
+                    <span className="hidden sm:inline">Logout</span>
                   </button>
                 </div>
               );
@@ -1196,7 +1198,7 @@ export default function App() {
       )}
 
       {/* Main Switch Router */}
-      <main>
+      <main className={view !== "landing" ? "pb-24 md:pb-0" : ""}>
         <AnimatePresence mode="wait">
           {view === "landing" && (
             <motion.div key="landing-view">
@@ -1263,6 +1265,45 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* iOS Native Bottom Navigation Bar for Mobile */}
+      {view !== "landing" && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-2xl border-t border-[#23242B] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 px-4 flex items-center justify-around shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
+          {/* Dashboard Tab */}
+          <button
+            onClick={() => {
+              setView("dashboard");
+              setSelectedInspiration(null);
+            }}
+            className={`flex flex-col items-center justify-center min-h-[48px] px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              view === "dashboard" ? "text-[#4F8CFF]" : "text-brand-muted hover:text-white"
+            }`}
+          >
+            <LayoutGrid className={`w-5 h-5 mb-1 ${view === "dashboard" ? "stroke-[2.25]" : "stroke-[1.5]"}`} />
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider">Vault</span>
+          </button>
+
+          {/* Center Save Action Button */}
+          <button
+            onClick={() => setShowSaveModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#4F8CFF] text-white font-sans font-bold text-xs shadow-[0_0_20px_rgba(139,92,246,0.4)] active:scale-95 transition-all -translate-y-1 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span className="uppercase tracking-wider">Save</span>
+          </button>
+
+          {/* Profile Tab */}
+          <button
+            onClick={() => setView("profile")}
+            className={`flex flex-col items-center justify-center min-h-[48px] px-3 py-1 rounded-xl transition-all cursor-pointer ${
+              view === "profile" ? "text-[#4F8CFF]" : "text-brand-muted hover:text-white"
+            }`}
+          >
+            <User className={`w-5 h-5 mb-1 ${view === "profile" ? "stroke-[2.25]" : "stroke-[1.5]"}`} />
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider">Profile</span>
+          </button>
+        </nav>
+      )}
 
       {/* Save Inspiration Modal overlay */}
       <AnimatePresence>
